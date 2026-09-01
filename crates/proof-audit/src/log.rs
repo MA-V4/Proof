@@ -9,6 +9,7 @@ pub struct AuditEntry {
     pub spec_name: String,
     pub spec_hash: String,
     pub actor:     String,
+    #[serde(flatten)]
     pub kind:      AuditEntryKind,
 }
 

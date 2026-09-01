@@ -48,6 +48,22 @@ export type Health = {
   divergences: number
 }
 
+export type AuditEntryKind =
+  | { kind: 'spec_loaded';          source: string }
+  | { kind: 'verified';             customer_id: string; ok: boolean }
+  | { kind: 'divergence_detected';  divergence_id: string }
+  | { kind: 'divergence_resolved';  divergence_id: string }
+  | { kind: 'simulation_run';       verdict: string }
+  | { kind: 'spec_signed_off';      approver: string }
+
+export type AuditEntry = {
+  id:        string
+  timestamp: string
+  spec_name: string
+  spec_hash: string
+  actor:     string
+} & AuditEntryKind
+
 const get = (path: string) => fetch(`${BASE}${path}`).then(r => r.json())
 
 export const api = {
@@ -64,4 +80,6 @@ export const api = {
   recentEvents: (): Promise<RecentEvent[]> => get('/events/recent'),
   resolve: (specName: string, id: string): Promise<void> =>
     fetch(`${BASE}/specs/${specName}/divergences/${id}`, { method: 'DELETE' }).then(() => {}),
+  audit:     (): Promise<AuditEntry[]>              => get('/audit'),
+    specAudit: (name: string): Promise<AuditEntry[]> => get(`/specs/${name}/audit`),
 }

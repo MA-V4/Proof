@@ -13,7 +13,7 @@ export function Nav() {
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/specs',     label: 'Specs' },
     { href: '/simulate',  label: 'Simulate'},
-    { href: '/audit',     label: 'Audit',     stub: true },
+    { href: '/audit',     label: 'Audit'},
     { href: '/diff',      label: 'Diff',      stub: true },
   ]
 

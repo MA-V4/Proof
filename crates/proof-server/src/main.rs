@@ -25,6 +25,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/specs",                        get(routes::specs::list_specs))
         .route("/specs/:name/divergences",      get(routes::specs::get_divergences))
         .route("/specs/:name/divergences/:id",  delete(routes::specs::resolve_divergence))
+        .route("/specs/:name/audit",            get(routes::audit::get_audit))
+        .route("/audit",                        get(routes::audit::get_all_audit))
         .route("/events/recent",                get(routes::events::recent_events))
         .route("/verify/:spec_name",            post(routes::verify::verify_event))
         .route("/verify/:spec_name/batch",      post(routes::verify::verify_batch))
