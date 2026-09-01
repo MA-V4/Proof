@@ -19,9 +19,9 @@ pub fn check(input: &CheckInput) -> Vec<RegulatoryFlag> {
 
     if input.customers_worse > 10_000 {
         flags.push(RegulatoryFlag {
-            rule:        "FCA Consumer Duty — Reporting threshold".into(),
+            rule:        "FCA Consumer Duty - Reporting threshold".into(),
             severity:    Severity::Review,
-            description: format!("{} customers affected — FCA reporting threshold exceeded", input.customers_worse),
+            description: format!("{} customers affected - FCA reporting threshold exceeded", input.customers_worse),
             action:      "Submit FCA change notification before activation.".into(),
             notice_days: None,
         });

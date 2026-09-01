@@ -2,7 +2,7 @@
 name    = "proof-verify"
 version = "0.1.0"
 edition = "2021"
-description = "Verification engine — compares system output against spec output"
+description = "Verification engine - compares system output against spec output"
 
 [dependencies]
 serde        = { workspace = true }

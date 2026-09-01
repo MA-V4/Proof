@@ -12,7 +12,7 @@ fn main() -> Result<()> {
         Some("audit")    => { eprintln!("audit: Phase 8"); Ok(()) }
         Some("diff") => cmd_diff(&args[2..]),
         _ => {
-            println!("PROOF — financial logic, verified pure.\n");
+            println!("PROOF: financial logic, verified pure.\n");
             println!("  check     <spec.proof> [--input json]           Evaluate a spec");
             println!("  ir        <spec.proof>                          Dump AST as JSON");
             println!("  verify    <spec.proof> --batch events.ndjson    Batch verification");
@@ -70,7 +70,7 @@ fn cmd_simulate(args: &[String]) -> Result<()> {
                 proof_regulatory::Severity::Review => "⚠",
                 proof_regulatory::Severity::Info   => "i",
             };
-            println!("  {}  {} — {:?}", icon, flag.rule, flag.severity);
+            println!("  {}  {} - {:?}", icon, flag.rule, flag.severity);
             println!("     {}", flag.description);
             println!("     Action: {}", flag.action);
             if let Some(days) = flag.notice_days {
@@ -81,7 +81,7 @@ fn cmd_simulate(args: &[String]) -> Result<()> {
     }
 
     let verdict_str = match report.verdict {
-        proof_regulatory::Verdict::DeployClean        => "DEPLOY — no concerns",
+        proof_regulatory::Verdict::DeployClean        => "DEPLOY - no concerns",
         proof_regulatory::Verdict::DeployWithReview   => "DEPLOY WITH REVIEW",
         proof_regulatory::Verdict::DoNotDeploy        => "DO NOT DEPLOY",
     };
@@ -115,7 +115,7 @@ fn cmd_check(args: &[String]) -> Result<()> {
     let spec = load_spec(spec_path)?;
 
     let Some(json) = flag(args, "--input") else {
-        println!("\nPROOF — parsed successfully\n");
+        println!("\nPROOF - parsed successfully\n");
         println!("  Product:      {}", spec.name);
         println!("  Jurisdiction: {:?}", spec.jurisdiction);
         println!("  Regulator:    {:?}", spec.regulator);
@@ -181,7 +181,7 @@ fn cmd_verify(args: &[String]) -> Result<()> {
         println!("  Balance:       £{}", input.balance);
 
         match proof_verify::compare(&spec, &input, &system_output)? {
-            None    => { println!("\n  Result: OK — matches specification\n"); }
+            None    => { println!("\n  Result: OK - matches specification\n"); }
             Some(d) => { proof_verify::alert::TerminalSink.emit(&d); }
         }
         return Ok(());
@@ -257,10 +257,10 @@ fn cmd_diff(args: &[String]) -> Result<()> {
     let new_spec = load_spec(new_path)?;
     let items    = proof_dsl::diff_specs(&old_spec, &new_spec);
 
-    println!("\nPROOF diff — {} → {}\n", old_path, new_path);
+    println!("\nPROOF diff - {} → {}\n", old_path, new_path);
 
     if items.is_empty() {
-        println!("  No differences — specs are functionally identical.\n");
+        println!("  No differences - specs are functionally identical.\n");
         return Ok(());
     }
 

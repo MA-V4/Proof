@@ -2,7 +2,7 @@
 name    = "proof-dsl"
 version = "0.1.0"
 edition = "2021"
-description = "PROOF specification language — lexer, parser, and AST"
+description = "PROOF specification language - lexer, parser, and AST"
 
 [dependencies]
 serde        = { workspace = true }

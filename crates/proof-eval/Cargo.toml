@@ -2,7 +2,7 @@
 name    = "proof-eval"
 version = "0.1.0"
 edition = "2021"
-description = "Execution engine — evaluates a spec against a set of inputs"
+description = "Execution engine - evaluates a spec against a set of inputs"
 
 [dependencies]
 serde        = { workspace = true }

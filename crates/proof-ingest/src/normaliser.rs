@@ -19,7 +19,7 @@ pub struct SystemEvent {
 }
 
 /// The subset of EvalOutput that the customer's system reports.
-/// reasoning is always empty — the system doesn't explain itself.
+/// reasoning is always empty - the system doesn't explain itself.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SystemOutput {
     pub amount:       Option<Decimal>,

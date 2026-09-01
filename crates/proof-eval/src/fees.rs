@@ -18,7 +18,7 @@ pub fn apply_fee(fees: &FeesBlock, fee_name: &str, input: &EvalInput) -> Result<
         rate_applied:  None,
         amount:        Some(amount),
         reasoning: vec![
-            format!("Fee: {} — £{}", fee_name, amount),
+            format!("Fee: {} - £{}", fee_name, amount),
             format!("Waivable: {}", fee.waivable),
         ],
     })

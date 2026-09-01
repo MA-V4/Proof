@@ -26,7 +26,7 @@ impl AlertSink for TerminalSink {
     }
 }
 
-/// Writes each divergence as a JSON line — pipe to a file or another tool.
+/// Writes each divergence as a JSON line - pipe to a file or another tool.
 pub struct JsonSink;
 
 impl AlertSink for JsonSink {
