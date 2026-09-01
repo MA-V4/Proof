@@ -5,7 +5,12 @@ Cargo.lock
 # Node
 node_modules/
 .next/
-dashboard/.next/
+
+# SQLite - never commit live database files
+proof.db
+proof.db-shm
+proof.db-wal
+audit.ndjson
 
 # Env
 .env
