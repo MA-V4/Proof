@@ -1,4 +1,5 @@
 pub mod audit;
+pub mod diff;
 pub mod events;
 pub mod health;
 pub mod simulate;

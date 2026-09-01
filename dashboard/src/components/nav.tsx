@@ -14,7 +14,7 @@ export function Nav() {
     { href: '/specs',     label: 'Specs' },
     { href: '/simulate',  label: 'Simulate'},
     { href: '/audit',     label: 'Audit'},
-    { href: '/diff',      label: 'Diff',      stub: true },
+    { href: '/diff',      label: 'Diff'},
   ]
 
   return (

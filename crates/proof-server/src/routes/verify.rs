@@ -39,7 +39,7 @@ pub async fn verify_event(
         timestamp:   Utc::now(),
     });
 
-    s.audit.append(AuditEntry {
+    s.log_audit(AuditEntry {
         id:        Uuid::new_v4(),
         timestamp: Utc::now(),
         spec_name: spec_name.clone(),
@@ -49,7 +49,7 @@ pub async fn verify_event(
     });
 
     if let Some(ref d) = result {
-        s.audit.append(AuditEntry {
+        s.log_audit(AuditEntry {
             id:        Uuid::new_v4(),
             timestamp: Utc::now(),
             spec_name: spec_name.clone(),
@@ -64,9 +64,7 @@ pub async fn verify_event(
 }
 
 #[derive(Deserialize)]
-pub struct BatchRequest {
-    events: Vec<SystemEvent>,
-}
+pub struct BatchRequest { events: Vec<SystemEvent> }
 
 #[derive(Serialize)]
 pub struct BatchResponse {
@@ -106,7 +104,7 @@ pub async fn verify_batch(
             timestamp:   Utc::now(),
         });
 
-        s.audit.append(AuditEntry {
+        s.log_audit(AuditEntry {
             id:        Uuid::new_v4(),
             timestamp: Utc::now(),
             spec_name: spec_name.clone(),
@@ -116,7 +114,7 @@ pub async fn verify_batch(
         });
 
         if let Some(ref d) = result {
-            s.audit.append(AuditEntry {
+            s.log_audit(AuditEntry {
                 id:        Uuid::new_v4(),
                 timestamp: Utc::now(),
                 spec_name: spec_name.clone(),
