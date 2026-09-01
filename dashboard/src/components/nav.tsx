@@ -12,7 +12,7 @@ export function Nav() {
   const links = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/specs',     label: 'Specs' },
-    { href: '/simulate',  label: 'Simulate',  stub: true },
+    { href: '/simulate',  label: 'Simulate'},
     { href: '/audit',     label: 'Audit',     stub: true },
     { href: '/diff',      label: 'Diff',      stub: true },
   ]

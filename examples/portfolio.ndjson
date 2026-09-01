@@ -1,0 +1,10 @@
+{"customer_id":"C-001","event_type":{"type":"daily_accrual"},"balance":"9840"}
+{"customer_id":"C-002","event_type":{"type":"daily_accrual"},"balance":"12000"}
+{"customer_id":"C-003","event_type":{"type":"daily_accrual"},"balance":"500"}
+{"customer_id":"C-004","event_type":{"type":"daily_accrual"},"balance":"1500"}
+{"customer_id":"C-005","event_type":{"type":"daily_accrual"},"balance":"2000"}
+{"customer_id":"C-006","event_type":{"type":"daily_accrual"},"balance":"3000"}
+{"customer_id":"C-007","event_type":{"type":"daily_accrual"},"balance":"15000"}
+{"customer_id":"C-008","event_type":{"type":"daily_accrual"},"balance":"800"}
+{"customer_id":"C-009","event_type":{"type":"daily_accrual"},"balance":"1200"}
+{"customer_id":"C-010","event_type":{"type":"daily_accrual"},"balance":"2400"}

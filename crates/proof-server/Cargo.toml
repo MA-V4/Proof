@@ -8,10 +8,12 @@ name = "proof-server"
 path = "src/main.rs"
 
 [dependencies]
-proof-dsl    = { path = "../proof-dsl" }
-proof-eval   = { path = "../proof-eval" }
-proof-verify = { path = "../proof-verify" }
-proof-ingest = { path = "../proof-ingest" }
+proof-dsl        = { path = "../proof-dsl" }
+proof-eval       = { path = "../proof-eval" }
+proof-verify     = { path = "../proof-verify" }
+proof-ingest     = { path = "../proof-ingest" }
+proof-sim        = { path = "../proof-sim" }
+proof-regulatory = { path = "../proof-regulatory" }
 axum               = "0.7"
 tower-http         = { version = "0.5", features = ["cors"] }
 tokio              = { workspace = true }

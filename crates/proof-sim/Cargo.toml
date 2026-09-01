@@ -2,12 +2,12 @@
 name    = "proof-sim"
 version = "0.1.0"
 edition = "2021"
-description = "Simulation engine — replays historical portfolios through spec changes"
 
 [dependencies]
-serde        = { workspace = true }
-serde_json   = { workspace = true }
-thiserror    = { workspace = true }
-anyhow       = { workspace = true }
-rust_decimal = { workspace = true }
-chrono       = { workspace = true }
+proof-dsl        = { path = "../proof-dsl" }
+proof-eval       = { path = "../proof-eval" }
+proof-regulatory = { path = "../proof-regulatory" }
+serde            = { workspace = true }
+serde_json       = { workspace = true }
+anyhow           = { workspace = true }
+rust_decimal     = { workspace = true }

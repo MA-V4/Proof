@@ -21,13 +21,14 @@ async fn main() -> anyhow::Result<()> {
     let state: SharedState = Arc::new(RwLock::new(app_state));
 
     let app = Router::new()
-        .route("/health",                          get(routes::health::health))
-        .route("/specs",                           get(routes::specs::list_specs))
-        .route("/specs/:name/divergences",         get(routes::specs::get_divergences))
-        .route("/specs/:name/divergences/:id",     delete(routes::specs::resolve_divergence))
-        .route("/events/recent",                   get(routes::events::recent_events))
-        .route("/verify/:spec_name",               post(routes::verify::verify_event))
-        .route("/verify/:spec_name/batch",         post(routes::verify::verify_batch))
+        .route("/health",                       get(routes::health::health))
+        .route("/specs",                        get(routes::specs::list_specs))
+        .route("/specs/:name/divergences",      get(routes::specs::get_divergences))
+        .route("/specs/:name/divergences/:id",  delete(routes::specs::resolve_divergence))
+        .route("/events/recent",                get(routes::events::recent_events))
+        .route("/verify/:spec_name",            post(routes::verify::verify_event))
+        .route("/verify/:spec_name/batch",      post(routes::verify::verify_batch))
+        .route("/simulate",                     post(routes::simulate::simulate))
         .layer(CorsLayer::permissive())
         .with_state(state);
 

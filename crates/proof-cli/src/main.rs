@@ -8,18 +8,90 @@ fn main() -> Result<()> {
         Some("check")    => cmd_check(&args[2..]),
         Some("ir")       => cmd_ir(&args[2..]),
         Some("verify")   => cmd_verify(&args[2..]),
-        Some("simulate") => { eprintln!("simulate: Phase 6"); Ok(()) }
+        Some("simulate") => cmd_simulate(&args[2..]),
         Some("audit")    => { eprintln!("audit: Phase 8"); Ok(()) }
         Some("diff")     => { eprintln!("diff: Phase 9"); Ok(()) }
         _ => {
             println!("PROOF — financial logic, verified pure.\n");
-            println!("  check    <spec.proof> [--input json]          Evaluate a spec");
-            println!("  ir       <spec.proof>                         Dump AST as JSON");
-            println!("  verify   <spec.proof> --event json            Single event check");
-            println!("  verify   <spec.proof> --batch events.ndjson   Batch verification");
+            println!("  check     <spec.proof> [--input json]           Evaluate a spec");
+            println!("  ir        <spec.proof>                          Dump AST as JSON");
+            println!("  verify    <spec.proof> --batch events.ndjson    Batch verification");
+            println!("  simulate  <spec.proof> --new <v2.proof>         Portfolio simulation");
+            println!("             --portfolio <portfolio.ndjson>");
             Ok(())
         }
     }
+}
+
+// ─── simulate ────────────────────────────────────────────────────────────────
+
+fn cmd_simulate(args: &[String]) -> Result<()> {
+    let spec_path = args.first()
+        .ok_or_else(|| anyhow!("usage: proof simulate <spec.proof> --new <v2.proof> --portfolio <portfolio.ndjson>"))?;
+
+    let new_path = flag(args, "--new")
+        .ok_or_else(|| anyhow!("--new <v2.proof> required"))?;
+
+    let portfolio_path = flag(args, "--portfolio")
+        .ok_or_else(|| anyhow!("--portfolio <portfolio.ndjson> required"))?;
+
+    let old_spec = load_spec(spec_path)?;
+    let new_spec = load_spec(new_path)?;
+    let portfolio = proof_sim::read_portfolio(portfolio_path)?;
+    let count = portfolio.len();
+
+    let report = proof_sim::run_simulation(&old_spec, &new_spec, portfolio)?;
+
+    println!("\nPROOF v{}\n", env!("CARGO_PKG_VERSION"));
+    println!("  Simulating: {}", report.spec_name);
+    println!("  Old spec:   {}", spec_path);
+    println!("  New spec:   {}", new_path);
+    println!("  Portfolio:  {} ({} customers)\n", portfolio_path, count);
+
+    println!("  Results");
+    println!("  ─────────────────────────────────────────────");
+    println!("  Customers worse off:   {:>6}", report.customers_worse);
+    if let Some(avg) = report.avg_delta_worse {
+        println!("    avg daily impact:    £{}/day", avg);
+    }
+    println!("  Customers better off:  {:>6}", report.customers_better);
+    println!("  Customers neutral:     {:>6}", report.customers_neutral);
+    println!("  Daily aggregate:       £{}", report.daily_delta);
+    println!("  Monthly aggregate:     £{}\n", report.monthly_delta);
+
+    if report.regulatory_flags.is_empty() {
+        println!("  Regulatory flags: none\n");
+    } else {
+        println!("  Regulatory flags");
+        println!("  ─────────────────────────────────────────────");
+        for flag in &report.regulatory_flags {
+            let icon = match flag.severity {
+                proof_regulatory::Severity::Block  => "✗",
+                proof_regulatory::Severity::Review => "⚠",
+                proof_regulatory::Severity::Info   => "i",
+            };
+            println!("  {}  {} — {:?}", icon, flag.rule, flag.severity);
+            println!("     {}", flag.description);
+            println!("     Action: {}", flag.action);
+            if let Some(days) = flag.notice_days {
+                println!("     Notice: {} days", days);
+            }
+            println!();
+        }
+    }
+
+    let verdict_str = match report.verdict {
+        proof_regulatory::Verdict::DeployClean        => "DEPLOY — no concerns",
+        proof_regulatory::Verdict::DeployWithReview   => "DEPLOY WITH REVIEW",
+        proof_regulatory::Verdict::DoNotDeploy        => "DO NOT DEPLOY",
+    };
+    println!("  Verdict: {}\n", verdict_str);
+
+    if report.verdict == proof_regulatory::Verdict::DoNotDeploy {
+        std::process::exit(1);
+    }
+
+    Ok(())
 }
 
 // ─── check ───────────────────────────────────────────────────────────────────
@@ -89,15 +161,14 @@ fn cmd_check(args: &[String]) -> Result<()> {
     Ok(())
 }
 
-// ─── verify ──────────────────────────────────────────────────────────────────
+//  verify 
 
 fn cmd_verify(args: &[String]) -> Result<()> {
     let spec_path = args.first()
-        .ok_or_else(|| anyhow!("usage: proof verify <spec.proof> --event '{{...}}' | --batch file.ndjson"))?;
+        .ok_or_else(|| anyhow!("usage: proof verify <spec.proof> --batch file.ndjson"))?;
 
     let spec = load_spec(spec_path)?;
 
-    // single event
     if let Some(json) = flag(args, "--event") {
         let event: proof_ingest::SystemEvent = serde_json::from_str(json)
             .map_err(|e| anyhow!("--event JSON error: {}", e))?;
@@ -116,7 +187,6 @@ fn cmd_verify(args: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    // batch file
     if let Some(path) = flag(args, "--batch") {
         let events = proof_ingest::read_batch(path)?;
         let mut divergences = 0usize;
@@ -136,9 +206,7 @@ fn cmd_verify(args: &[String]) -> Result<()> {
 
         println!();
         println!("  Verified: {}   Divergences: {}", events.len(), divergences);
-        if divergences > 0 {
-            std::process::exit(1); // non-zero exit lets CI catch it
-        }
+        if divergences > 0 { std::process::exit(1); }
         println!();
         return Ok(());
     }
@@ -146,7 +214,7 @@ fn cmd_verify(args: &[String]) -> Result<()> {
     Err(anyhow!("provide --event '{{...}}' or --batch file.ndjson"))
 }
 
-// ─── ir ──────────────────────────────────────────────────────────────────────
+//  ir
 
 fn cmd_ir(args: &[String]) -> Result<()> {
     let spec_path = args.first()
@@ -156,7 +224,7 @@ fn cmd_ir(args: &[String]) -> Result<()> {
     Ok(())
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// helpers
 
 fn load_spec(path: &str) -> Result<proof_dsl::ast::ProductSpec> {
     let src = std::fs::read_to_string(path)
@@ -165,18 +233,16 @@ fn load_spec(path: &str) -> Result<proof_dsl::ast::ProductSpec> {
 }
 
 fn flag<'a>(args: &'a [String], name: &str) -> Option<&'a str> {
-    args.windows(2)
-        .find(|w| w[0] == name)
-        .map(|w| w[1].as_str())
+    args.windows(2).find(|w| w[0] == name).map(|w| w[1].as_str())
 }
 
 fn parse_event_type(s: &str) -> Result<proof_eval::types::EventType> {
     Ok(match s {
-        "daily_accrual"        => proof_eval::types::EventType::DailyAccrual,
-        "monthly_interest"     => proof_eval::types::EventType::MonthlyInterestPayment,
+        "daily_accrual"    => proof_eval::types::EventType::DailyAccrual,
+        "monthly_interest" => proof_eval::types::EventType::MonthlyInterestPayment,
         s if s.starts_with("fee:") => proof_eval::types::EventType::FeeCharge {
             fee_name: s.trim_start_matches("fee:").into(),
         },
-        other => return Err(anyhow!("unknown event: '{}' — try: daily_accrual, fee:<name>", other)),
+        other => return Err(anyhow!("unknown event: '{}'", other)),
     })
 }
