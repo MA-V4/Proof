@@ -7,10 +7,10 @@ It makes it impossible to silently ship wrong financial logic.
 
 ## What it does
 
-1. **Specify** — write your product rules in the PROOF specification language
-2. **Verify** — PROOF runs alongside your system in production, independently recomputing every calculation
-3. **Simulate** — before deploying a change, replay 12 months of real portfolio history through the new spec and see the exact impact
-4. **Audit** — every spec version is cryptographically signed; every verification event is logged; pull a regulator-ready audit pack in one command
+1. **Specify** - write your product rules in the PROOF specification language
+2. **Verify** - PROOF runs alongside your system in production, independently recomputing every calculation
+3. **Simulate** - before deploying a change, replay 12 months of real portfolio history through the new spec and see the exact impact
+4. **Audit** - every spec version is cryptographically signed; every verification event is logged; pull a regulator-ready audit pack in one command
 
 ## Quick start
 
@@ -33,13 +33,13 @@ proof simulate examples/savings-account.proof \
 
 ```
 crates/
-  proof-dsl/        Specification language — lexer, parser, AST
-  proof-eval/       Execution engine — evaluates specs against inputs
-  proof-verify/     Verification engine — diffs spec vs system output
-  proof-ingest/     Event ingestion — Kafka, webhooks, batch files
-  proof-sim/        Simulation engine — portfolio replay
-  proof-regulatory/ Regulatory knowledge base — FCA, PRA, CFPB, EBA
-  proof-audit/      Audit trail — cryptographic signing, immutable logs
+  proof-dsl/        Specification language - lexer, parser, AST
+  proof-eval/       Execution engine - evaluates specs against inputs
+  proof-verify/     Verification engine - diffs spec vs system output
+  proof-ingest/     Event ingestion - Kafka, webhooks, batch files
+  proof-sim/        Simulation engine - portfolio replay
+  proof-regulatory/ Regulatory knowledge base - FCA, PRA, CFPB, EBA
+  proof-audit/      Audit trail - cryptographic signing, immutable logs
   proof-server/     HTTP control API (Axum)
   proof-cli/        Command-line interface
 
