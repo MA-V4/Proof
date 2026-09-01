@@ -4,30 +4,42 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEntry {
-    pub id:          Uuid,
-    pub timestamp:   DateTime<Utc>,
-    pub kind:        AuditEntryKind,
-    pub actor:       String,
-    pub spec_name:   String,
-    pub spec_hash:   String,
+    pub id:        Uuid,
+    pub timestamp: DateTime<Utc>,
+    pub spec_name: String,
+    pub spec_hash: String,
+    pub actor:     String,
+    pub kind:      AuditEntryKind,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum AuditEntryKind {
-    SpecPublished  { version: String },
-    SpecSignedOff  { version: String, approver: String },
-    DivergenceDetected { divergence_id: Uuid },
-    DivergenceResolved { divergence_id: Uuid },
-    SimulationRun  { old_version: String, new_version: String },
+    SpecLoaded     { source: String },
+    Verified       { customer_id: String, ok: bool },
+    DivergenceDetected { divergence_id: String },
+    DivergenceResolved { divergence_id: String },
+    SimulationRun  { verdict: String },
+    SpecSignedOff  { approver: String },
 }
 
-pub struct AuditLog;
+/// In-memory append-only audit log. Phase 8 persists this to SQLite.
+#[derive(Default)]
+pub struct AuditLog {
+    entries: Vec<AuditEntry>,
+}
+
 impl AuditLog {
-    pub fn append(&self, _entry: AuditEntry) {
-        todo!("Phase 8 — append to immutable audit log")
+    pub fn new() -> Self { Self::default() }
+
+    pub fn append(&mut self, entry: AuditEntry) {
+        self.entries.push(entry);
     }
-    pub fn export_fca_pack(&self, _spec_name: &str) -> Vec<u8> {
-        todo!("Phase 8 — export regulator audit pack")
+
+    pub fn for_spec(&self, name: &str) -> Vec<&AuditEntry> {
+        self.entries.iter().filter(|e| e.spec_name == name).collect()
     }
+
+    pub fn all(&self) -> &[AuditEntry] { &self.entries }
+    pub fn total(&self) -> usize { self.entries.len() }
 }

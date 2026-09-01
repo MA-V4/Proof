@@ -1,6 +1,11 @@
-use anyhow::Result;
+use sha2::{Digest, Sha256};
 
-// Phase 8: hash + sign a spec with Ed25519, return the hex signature.
-pub fn sign_spec(_spec_content: &str) -> Result<String> {
-    todo!("Phase 8 — sign spec")
+/// SHA-256 hash of spec source text. Returns lowercase hex.
+pub fn hash_spec(source: &str) -> String {
+    hex::encode(Sha256::digest(source.as_bytes()))
+}
+
+/// First 8 chars of the hash for display — same format as git short SHA.
+pub fn short_hash(full: &str) -> &str {
+    &full[..8.min(full.len())]
 }

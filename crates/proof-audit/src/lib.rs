@@ -1,7 +1,7 @@
-pub mod signer;
-pub mod log;
 pub mod export;
+pub mod log;
+pub mod signer;
 pub mod store;
 
-pub use log::{AuditLog, AuditEntry};
-pub use signer::sign_spec;
+pub use log::{AuditEntry, AuditEntryKind, AuditLog};
+pub use signer::{hash_spec, short_hash};
