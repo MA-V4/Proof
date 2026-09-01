@@ -109,7 +109,7 @@ export default function SimulatePage() {
   }
 
   const verdictLabel = {
-    DeployClean:       'Deploy — no concerns',
+    DeployClean:       'Deploy - no concerns',
     DeployWithReview:  'Deploy with review',
     DoNotDeploy:       'Do not deploy',
   }
@@ -168,7 +168,7 @@ export default function SimulatePage() {
           {/* Before/after */}
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <div className="text-xs font-medium text-gray-500 mb-3">Current — {report.spec_name}</div>
+              <div className="text-xs font-medium text-gray-500 mb-3">Current - {report.spec_name}</div>
               <div className="space-y-1">
                 {[
                   ['Total customers', report.customers_total],

@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name        = "proof-sdk"
 version     = "0.1.0"
-description = "PROOF — financial logic, verified pure"
+description = "PROOF - financial logic, verified pure"
 requires-python = ">=3.10"
 
 [tool.maturin]

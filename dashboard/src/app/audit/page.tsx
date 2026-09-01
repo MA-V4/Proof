@@ -6,11 +6,11 @@ import { api, AuditEntry } from '@/lib/api'
 
 function kindLabel(entry: AuditEntry): { label: string; ok: boolean | null } {
   switch (entry.kind) {
-    case 'spec_loaded':          return { label: `Spec loaded — ${entry.source}`,                               ok: null  }
-    case 'verified':             return { label: `Verified — ${entry.customer_id}`,                             ok: entry.ok }
-    case 'divergence_detected':  return { label: `Divergence detected — ${entry.divergence_id.slice(0, 8)}`,    ok: false }
-    case 'divergence_resolved':  return { label: `Divergence resolved — ${entry.divergence_id.slice(0, 8)}`,    ok: true  }
-    case 'simulation_run':       return { label: `Simulation run — ${entry.verdict}`,                           ok: null  }
+    case 'spec_loaded':          return { label: `Spec loaded - ${entry.source}`,                               ok: null  }
+    case 'verified':             return { label: `Verified - ${entry.customer_id}`,                             ok: entry.ok }
+    case 'divergence_detected':  return { label: `Divergence detected - ${entry.divergence_id.slice(0, 8)}`,    ok: false }
+    case 'divergence_resolved':  return { label: `Divergence resolved - ${entry.divergence_id.slice(0, 8)}`,    ok: true  }
+    case 'simulation_run':       return { label: `Simulation run - ${entry.verdict}`,                           ok: null  }
     case 'spec_signed_off':      return { label: `Signed off by ${entry.approver}`,                             ok: true  }
     default:                     return { label: 'Event',                                                       ok: null  }
   }

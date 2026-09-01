@@ -3,18 +3,21 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Nav } from '@/components/nav'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'PROOF — financial logic, verified pure',
+  title: 'PROOF',
+  description: 'Financial logic, verified pure.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
+    <html lang="en" className={inter.variable}>
+      <body className="font-sans bg-slate-50 min-h-screen text-slate-900 antialiased">
         <Nav />
-        <main className="max-w-5xl mx-auto px-6 py-8">{children}</main>
+        <main className="max-w-6xl mx-auto px-6 py-8">
+          {children}
+        </main>
       </body>
     </html>
   )

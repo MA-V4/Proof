@@ -11,45 +11,58 @@ export function Nav() {
 
   const links = [
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/specs',     label: 'Specs' },
-    { href: '/simulate',  label: 'Simulate'},
-    { href: '/audit',     label: 'Audit'},
-    { href: '/diff',      label: 'Diff'},
+    { href: '/specs',     label: 'Specs'     },
+    { href: '/simulate',  label: 'Simulate'  },
+    { href: '/audit',     label: 'Audit'     },
+    { href: '/diff',      label: 'Diff'      },
   ]
 
+  const divCount = data?.divergences ?? 0
+
   return (
-    <nav className="flex items-center border-b border-gray-200 px-6 py-3 gap-1 bg-white">
-      <span className="font-mono text-sm font-medium tracking-widest text-gray-900 mr-4">
-        PROOF
-      </span>
-      {links.map(l => (
-        <Link
-          key={l.href}
-          href={l.href}
-          className={[
-            'text-sm px-3 py-1.5 rounded transition-colors',
-            path.startsWith(l.href)
-              ? 'bg-gray-100 text-gray-900'
-              : l.stub
-              ? 'text-gray-400 cursor-not-allowed pointer-events-none'
-              : 'text-gray-500 hover:text-gray-900',
-          ].join(' ')}
-        >
-          {l.label}
-        </Link>
-      ))}
-      {data && data.divergences > 0 && (
-        <div className="ml-auto flex items-center gap-2 text-xs text-red-600 font-medium">
-          <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-          {data.divergences} divergence{data.divergences !== 1 ? 's' : ''}
+    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center gap-8">
+        <span className="font-mono font-semibold text-slate-900 text-sm tracking-widest select-none">
+          PROOF
+        </span>
+        <div className="flex items-center gap-0.5">
+          {links.map(l => {
+            const active = path.startsWith(l.href)
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={[
+                  'text-sm px-3 py-1.5 rounded-md transition-colors duration-100',
+                  active
+                    ? 'bg-slate-100 text-slate-900 font-medium'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50',
+                ].join(' ')}
+              >
+                {l.label}
+              </Link>
+            )
+          })}
         </div>
-      )}
-      {data && data.divergences === 0 && (
-        <div className="ml-auto flex items-center gap-2 text-xs text-green-600">
-          <span className="w-2 h-2 rounded-full bg-green-600" />
-          All clean
+        <div className="ml-auto">
+          {divCount > 0 ? (
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              <span className="text-xs font-medium text-red-600 tabular">
+                {divCount} divergence{divCount !== 1 ? 's' : ''}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="text-xs font-medium text-emerald-600">All clean</span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </nav>
   )
 }

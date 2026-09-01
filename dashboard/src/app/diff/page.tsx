@@ -148,7 +148,7 @@ export default function DiffPage() {
 
       {items !== null && items.length === 0 && (
         <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
-          No differences — specs are functionally identical.
+          No differences - specs are functionally identical.
         </div>
       )}
 
