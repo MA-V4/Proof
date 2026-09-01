@@ -7,15 +7,22 @@ pub struct HealthResponse {
     status:          &'static str,
     specs:           usize,
     events_verified: u64,
-    divergences:     usize,
+    divergences:     i64,
 }
 
 pub async fn health(State(state): State<SharedState>) -> Json<HealthResponse> {
-    let s = state.read().await;
+    let s    = state.read().await;
+    let db   = s.db.clone();
+    let evs  = s.events_verified;
+    let nsp  = s.specs.len();
+    drop(s);
+
+    let divergences = db.count_divergences(None).await.unwrap_or(0);
+
     Json(HealthResponse {
-        status:          "ok",
-        specs:           s.specs.len(),
-        events_verified: s.events_verified,
-        divergences:     s.divergences.len(),
+        status: "ok",
+        specs:  nsp,
+        events_verified: evs,
+        divergences,
     })
 }

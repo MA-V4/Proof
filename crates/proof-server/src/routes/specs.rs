@@ -1,4 +1,3 @@
-// Phase 5 deliverable — /specs endpoints.
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -10,39 +9,41 @@ use serde::Serialize;
 #[derive(Serialize)]
 pub struct SpecSummary {
     name:        String,
-    divergences: usize,
+    divergences: i64,
     status:      &'static str,
 }
 
-pub async fn list_specs(State(state): State<SharedState>) -> Json<Vec<SpecSummary>> {
-    let s = state.read().await;
-    let specs: Vec<SpecSummary> = s
-        .specs
-        .keys()
-        .map(|name| {
-            let count = s.divergences.iter().filter(|d| &d.spec_name == name).count();
-            SpecSummary {
-                name:        name.clone(),
-                divergences: count,
-                status:      if count == 0 { "clean" } else { "divergence" },
-            }
-        })
-        .collect();
-    Json(specs)
+pub async fn list_specs(State(state): State<SharedState>) -> AppResult<Json<Vec<SpecSummary>>> {
+    let s  = state.read().await;
+    let db = s.db.clone();
+    let names: Vec<String> = s.specs.keys().cloned().collect();
+    drop(s);
+
+    let mut specs = Vec::new();
+    for name in names {
+        let count = db.count_divergences(Some(&name)).await.unwrap_or(0);
+        specs.push(SpecSummary {
+            status: if count == 0 { "clean" } else { "divergence" },
+            name,
+            divergences: count,
+        });
+    }
+
+    Ok(Json(specs))
 }
 
 pub async fn get_divergences(
     State(state): State<SharedState>,
     Path(name): Path<String>,
 ) -> AppResult<Json<Vec<proof_verify::Divergence>>> {
-    let s = state.read().await;
+    let s  = state.read().await;
+    let db = s.db.clone();
     if !s.specs.contains_key(&name) {
         return Err(anyhow::anyhow!("spec '{}' not found", name).into());
     }
-    let divs: Vec<_> = s.divergences.iter()
-        .filter(|d| d.spec_name == name)
-        .cloned()
-        .collect();
+    drop(s);
+
+    let divs = db.get_divergences(Some(&name)).await?;
     Ok(Json(divs))
 }
 
@@ -50,12 +51,13 @@ pub async fn resolve_divergence(
     State(state): State<SharedState>,
     Path((name, id)): Path<(String, String)>,
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let mut s = state.write().await;
-    let before = s.divergences.len();
-    s.divergences.retain(|d| !(d.spec_name == name && d.id.to_string() == id));
-    if s.divergences.len() < before {
-        Ok(StatusCode::NO_CONTENT)
-    } else {
-        Err((StatusCode::NOT_FOUND, format!("divergence {} not found", id)))
+    let s  = state.read().await;
+    let db = s.db.clone();
+    drop(s);
+
+    match db.resolve_divergence(&id).await {
+        Ok(true)  => Ok(StatusCode::NO_CONTENT),
+        Ok(false) => Err((StatusCode::NOT_FOUND, format!("divergence {} not found", id))),
+        Err(e)    => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
 }

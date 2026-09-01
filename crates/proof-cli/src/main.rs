@@ -10,7 +10,7 @@ fn main() -> Result<()> {
         Some("verify")   => cmd_verify(&args[2..]),
         Some("simulate") => cmd_simulate(&args[2..]),
         Some("audit")    => { eprintln!("audit: Phase 8"); Ok(()) }
-        Some("diff")     => { eprintln!("diff: Phase 9"); Ok(()) }
+        Some("diff") => cmd_diff(&args[2..]),
         _ => {
             println!("PROOF — financial logic, verified pure.\n");
             println!("  check     <spec.proof> [--input json]           Evaluate a spec");
@@ -245,4 +245,54 @@ fn parse_event_type(s: &str) -> Result<proof_eval::types::EventType> {
         },
         other => return Err(anyhow!("unknown event: '{}'", other)),
     })
+}
+
+fn cmd_diff(args: &[String]) -> Result<()> {
+    let old_path = args.first()
+        .ok_or_else(|| anyhow!("usage: proof diff <old.proof> <new.proof>"))?;
+    let new_path = args.get(1)
+        .ok_or_else(|| anyhow!("usage: proof diff <old.proof> <new.proof>"))?;
+
+    let old_spec = load_spec(old_path)?;
+    let new_spec = load_spec(new_path)?;
+    let items    = proof_dsl::diff_specs(&old_spec, &new_spec);
+
+    println!("\nPROOF diff — {} → {}\n", old_path, new_path);
+
+    if items.is_empty() {
+        println!("  No differences — specs are functionally identical.\n");
+        return Ok(());
+    }
+
+    println!("  {} change{}:\n", items.len(), if items.len() == 1 { "" } else { "s" });
+
+    for item in &items {
+        use proof_dsl::DiffItem::*;
+        match item {
+            BaseRateChanged { old, new, delta } => {
+                println!("  base_rate");
+                println!("    {}% → {}%  ({:+}%)\n", old, new, delta);
+            }
+            TierThresholdChanged { tier_index, old_threshold, new_threshold } => {
+                println!("  tier_{} threshold", tier_index + 1);
+                println!("    £{} → £{}\n", old_threshold, new_threshold);
+            }
+            TierRateChanged { tier_index, old_rate, new_rate } => {
+                println!("  tier_{} rate", tier_index + 1);
+                println!("    {} → {}\n", old_rate, new_rate);
+            }
+            TierAdded   { tier_index } => println!("  tier_{} added\n",   tier_index + 1),
+            TierRemoved { tier_index } => println!("  tier_{} removed\n", tier_index + 1),
+            PromotionalRateChanged { old, new } => {
+                println!("  promotional rate");
+                println!("    {} → {}\n", old, new);
+            }
+            ObligationChanged { field, old, new } => {
+                println!("  obligation: {}", field);
+                println!("    {} → {}\n", old, new);
+            }
+        }
+    }
+
+    Ok(())
 }

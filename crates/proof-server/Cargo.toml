@@ -13,8 +13,8 @@ proof-eval       = { path = "../proof-eval" }
 proof-verify     = { path = "../proof-verify" }
 proof-ingest     = { path = "../proof-ingest" }
 proof-sim        = { path = "../proof-sim" }
-proof-audit = { path = "../proof-audit" }
 proof-regulatory = { path = "../proof-regulatory" }
+proof-audit      = { path = "../proof-audit" }
 axum               = "0.7"
 tower-http         = { version = "0.5", features = ["cors"] }
 tokio              = { workspace = true }
@@ -25,3 +25,4 @@ uuid               = { workspace = true }
 chrono             = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+sqlx               = { workspace = true }

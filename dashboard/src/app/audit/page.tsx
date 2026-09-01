@@ -45,18 +45,20 @@ export default function AuditPage() {
   async function handleExport() {
     setExporting(true)
     try {
-      const pack = await api.exportFca(specName)
-      const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href     = url
-      a.download = `fca-audit-${specName}-${new Date().toISOString().slice(0, 10)}.json`
-      a.click()
-      URL.revokeObjectURL(url)
+        const pack = await api.exportFca(specName)
+        const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' })
+        const url  = URL.createObjectURL(blob)
+        const a    = document.createElement('a')
+        a.href     = url
+        a.download = `fca-audit-${specName}-${new Date().toISOString().slice(0, 10)}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+    } catch (e: any) {
+        alert(`Export failed: ${e.message}`)
     } finally {
-      setExporting(false)
+        setExporting(false)
     }
-  }
+}
 
   if (isLoading) return <p className="text-sm text-gray-400">Loading...</p>
 

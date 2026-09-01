@@ -73,14 +73,27 @@ export type DiffItem =
   | { type: 'promotional_rate_changed'; old: string; new: string }
   | { type: 'obligation_changed';       field: string; old: string; new: string }
 
-const get  = (path: string) => fetch(`${BASE}${path}`).then(r => r.json())
+ const get = async (path: string) => {
+  const r    = await fetch(`${BASE}${path}`)
+  const text = await r.text()
+  if (!text) throw new Error(`Empty response (HTTP ${r.status})`)
+  const data = JSON.parse(text)
+  if (!r.ok)  throw new Error(data.error ?? `HTTP ${r.status}`)
+  return data
+}
 
-const post = (path: string, body: unknown) =>
-  fetch(`${BASE}${path}`, {
+const post = async (path: string, body: unknown) => {
+  const r    = await fetch(`${BASE}${path}`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(body),
-  }).then(r => r.json())
+  })
+  const text = await r.text()
+  if (!text) throw new Error(`Server returned empty response (HTTP ${r.status})`)
+  const data = JSON.parse(text)
+  if (!r.ok)  throw new Error(data.error ?? `HTTP ${r.status}`)
+  return data
+}
 
 const del = (path: string) =>
   fetch(`${BASE}${path}`, { method: 'DELETE' }).then(() => {})

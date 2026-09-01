@@ -1,12 +1,14 @@
 use chrono::{DateTime, Utc};
-use proof_audit::{AuditEntry, AuditEntryKind, AuditLog, AuditStore};
+use proof_audit::{AuditEntry, AuditEntryKind};
 use proof_dsl::ast::ProductSpec;
-use proof_verify::Divergence;
 use serde::Serialize;
 use std::collections::{HashMap, VecDeque};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
+
+use crate::db::Db;
 
 pub type SharedState = Arc<RwLock<AppState>>;
 
@@ -14,11 +16,9 @@ pub struct AppState {
     pub specs:           HashMap<String, ProductSpec>,
     pub spec_sources:    HashMap<String, String>,
     pub spec_hashes:     HashMap<String, String>,
-    pub divergences:     Vec<Divergence>,
     pub events_verified: u64,
     pub recent:          VecDeque<RecentEvent>,
-    pub audit:           AuditLog,
-    pub audit_store:     AuditStore,
+    pub db:              Db,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -31,19 +31,11 @@ pub struct RecentEvent {
 }
 
 impl AppState {
-    pub fn load_from_dir(dir: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub async fn load(dir: impl AsRef<Path>, db: Db) -> anyhow::Result<Self> {
         let dir = dir.as_ref();
         let mut specs        = HashMap::new();
         let mut spec_sources = HashMap::new();
         let mut spec_hashes  = HashMap::new();
-
-        let audit_store = AuditStore::open("audit.ndjson");
-        let mut audit   = AuditLog::new();
-
-        // Load persisted entries
-        for entry in audit_store.load() {
-            audit.append(entry);
-        }
 
         if dir.exists() {
             for entry in std::fs::read_dir(dir)? {
@@ -53,19 +45,25 @@ impl AppState {
                     match proof_dsl::parse(&src) {
                         Ok(spec) => {
                             let hash = proof_audit::hash_spec(&src);
-                            tracing::info!("loaded spec: {} ({})", spec.name, proof_audit::short_hash(&hash));
-                            let log_entry = AuditEntry {
-                                id:        uuid::Uuid::new_v4(),
+                            tracing::info!(
+                                "loaded spec: {} ({})",
+                                spec.name,
+                                proof_audit::short_hash(&hash)
+                            );
+                            let audit_entry = AuditEntry {
+                                id:        Uuid::new_v4(),
                                 timestamp: Utc::now(),
                                 spec_name: spec.name.clone(),
                                 spec_hash: hash.clone(),
                                 actor:     "system".into(),
                                 kind:      AuditEntryKind::SpecLoaded {
-                                    source: path.file_name().unwrap().to_string_lossy().into(),
+                                    source: path.file_name()
+                                        .unwrap()
+                                        .to_string_lossy()
+                                        .into(),
                                 },
                             };
-                            audit_store.append(&log_entry);
-                            audit.append(log_entry);
+                            let _ = db.insert_audit(&audit_entry).await;
                             spec_sources.insert(spec.name.clone(), src);
                             spec_hashes.insert(spec.name.clone(), hash);
                             specs.insert(spec.name.clone(), spec);
@@ -76,25 +74,23 @@ impl AppState {
             }
         }
 
-        tracing::info!("loaded {} spec(s), {} audit entries", specs.len(), audit.total());
+        let events_verified = db.count_events().await.unwrap_or(0) as u64;
+        let recent_vec      = db.get_recent_events(100).await.unwrap_or_default();
+        let recent          = recent_vec.into_iter().collect();
+
+        tracing::info!("loaded {} spec(s), {} events in history", specs.len(), events_verified);
+
         Ok(Self {
             specs,
             spec_sources,
             spec_hashes,
-            divergences:     Vec::new(),
-            events_verified: 0,
-            recent:          VecDeque::new(),
-            audit,
-            audit_store,
+            events_verified,
+            recent,
+            db,
         })
     }
 
-    pub fn log_audit(&mut self, entry: AuditEntry) {
-        self.audit_store.append(&entry);
-        self.audit.append(entry);
-    }
-
-    pub fn push_event(&mut self, event: RecentEvent) {
+    pub fn push_recent(&mut self, event: RecentEvent) {
         self.events_verified += 1;
         self.recent.push_front(event);
         if self.recent.len() > 100 { self.recent.pop_back(); }
