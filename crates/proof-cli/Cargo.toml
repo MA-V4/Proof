@@ -1,0 +1,19 @@
+[package]
+name    = "proof-cli"
+version = "0.1.0"
+edition = "2021"
+description = "PROOF command-line interface"
+
+[[bin]]
+name = "proof"
+path = "src/main.rs"
+
+[dependencies]
+proof-dsl     = { path = "../proof-dsl" }
+proof-eval    = { path = "../proof-eval" }
+proof-ingest  = { path = "../proof-ingest" }
+proof-verify  = { path = "../proof-verify" }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+anyhow        = { workspace = true }
+rust_decimal  = { workspace = true }

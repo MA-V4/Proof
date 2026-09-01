@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/proof-dsl",
+    "crates/proof-eval",
+    "crates/proof-verify",
+    "crates/proof-ingest",
+    "crates/proof-sim",
+    "crates/proof-regulatory",
+    "crates/proof-audit",
+    "crates/proof-server",
+    "crates/proof-cli",
+]
+
+[workspace.dependencies]
+serde        = { version = "1", features = ["derive"] }
+serde_json   = "1"
+tokio        = { version = "1", features = ["full"] }
+thiserror    = "1"
+anyhow       = "1"
+chrono       = { version = "0.4", features = ["serde"] }
+rust_decimal = { version = "1", features = ["serde-with-str"] }
+tracing      = "0.1"
+uuid         = { version = "1", features = ["v4", "serde"] }

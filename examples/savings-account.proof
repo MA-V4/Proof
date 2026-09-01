@@ -1,0 +1,44 @@
+# SavingsAccount.proof
+# PROOF specification for a UK instant-access savings account.
+# This file is the source of truth. Your implementation must match it exactly.
+
+product SavingsAccount {
+  jurisdiction: UK
+  regulator:    FCA
+  category:     deposit
+
+  interest {
+    base_rate: 4.50%
+
+    tiers {
+      when balance >= 10_000  rate: base_rate + 1.00%
+      when balance >= 1_000   rate: base_rate + 0.50%
+      otherwise               rate: base_rate
+    }
+
+    promotional {
+      condition:      days_since_joined <= 90
+      rate:           base_rate + 2.00%
+      expires_after:  90 days
+      non_renewable:  true
+    }
+
+    accrual {
+      frequency:        daily
+      basis:            ACT/365
+      compound:         annually
+      minimum_payable:  GBP 0.01
+    }
+  }
+
+  protection {
+    scheme: FSCS
+    limit:  GBP 85_000
+  }
+
+  obligations {
+    cooling_off:          14 days
+    rate_change_notice:   14 days
+    annual_summary:       required
+  }
+}

@@ -1,0 +1,12 @@
+[package]
+name    = "proof-ingest"
+version = "0.1.0"
+edition = "2021"
+description = "Event ingestion - batch, webhook, and Kafka readers"
+
+[dependencies]
+proof-eval   = { path = "../proof-eval" }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+anyhow       = { workspace = true }
+rust_decimal = { workspace = true }

@@ -1,0 +1,16 @@
+# Rust
+target/
+Cargo.lock
+
+# Node
+node_modules/
+.next/
+dashboard/.next/
+
+# Env
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

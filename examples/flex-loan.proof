@@ -1,0 +1,41 @@
+# FlexLoan.proof
+# PROOF specification for a flexible personal loan product.
+
+product FlexLoan {
+  jurisdiction: UK
+  regulator:    FCA
+  category:     credit
+
+  interest {
+    base_rate: 8.90%
+
+    tiers {
+      when balance >= 20_000  rate: 6.90%
+      when balance >= 10_000  rate: 7.90%
+      otherwise               rate: base_rate
+    }
+
+    accrual {
+      frequency:  daily
+      basis:      ACT/365
+      compound:   monthly
+    }
+  }
+
+  fees {
+    fee "late_payment" {
+      amount:   GBP 12.00
+      waivable: true
+    }
+    fee "early_repayment" {
+      amount:   1.00%
+      waivable: false
+    }
+  }
+
+  obligations {
+    cooling_off:          14 days
+    rate_change_notice:   30 days
+    annual_summary:       required
+  }
+}

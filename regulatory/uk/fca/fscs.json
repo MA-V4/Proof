@@ -1,0 +1,11 @@
+{
+  "rule": "FSCS Deposit Protection",
+  "limit_gbp": 85000,
+  "per": "institution",
+  "coverage": ["current accounts", "savings accounts", "cash ISAs"],
+  "obligations": [
+    "FSCS Information Sheet at account opening",
+    "Annual FSCS reminder to customers",
+    "Exclusions List provided on request"
+  ]
+}

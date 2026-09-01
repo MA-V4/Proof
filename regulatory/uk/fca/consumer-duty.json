@@ -1,0 +1,26 @@
+{
+  "rule": "FCA Consumer Duty",
+  "effective": "2023-07-31",
+  "source": "PS22/9",
+  "triggers": [
+    {
+      "event": "rate_reduction_material",
+      "threshold_customers": 1,
+      "obligations": [
+        "14-day advance notice to affected customers",
+        "Individual notification (not just terms update)",
+        "Updated terms publication",
+        "FCA reporting if > 10,000 customers affected"
+      ],
+      "notice_days": 14
+    },
+    {
+      "event": "product_withdrawal",
+      "obligations": [
+        "Reasonable notice to existing customers",
+        "Alternative product signposting",
+        "No forced closure without consent"
+      ]
+    }
+  ]
+}

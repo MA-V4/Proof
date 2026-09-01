@@ -1,0 +1,17 @@
+[package]
+name    = "proof-verify"
+version = "0.1.0"
+edition = "2021"
+description = "Verification engine — compares system output against spec output"
+
+[dependencies]
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+thiserror    = { workspace = true }
+anyhow       = { workspace = true }
+rust_decimal = { workspace = true }
+chrono       = { workspace = true }
+proof-dsl  = { path = "../proof-dsl" }
+proof-eval = { path = "../proof-eval" }
+uuid       = { workspace = true }
+tracing    = { workspace = true }
