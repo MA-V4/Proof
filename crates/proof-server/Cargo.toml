@@ -13,6 +13,7 @@ proof-eval       = { path = "../proof-eval" }
 proof-verify     = { path = "../proof-verify" }
 proof-ingest     = { path = "../proof-ingest" }
 proof-sim        = { path = "../proof-sim" }
+proof-audit = { path = "../proof-audit" }
 proof-regulatory = { path = "../proof-regulatory" }
 axum               = "0.7"
 tower-http         = { version = "0.5", features = ["cors"] }
