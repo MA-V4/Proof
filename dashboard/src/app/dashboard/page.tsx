@@ -337,7 +337,10 @@ export default function DashboardPage() {
             <DonutChart high={highCount} medium={medCount} low={lowCount} />
             {activeDivs.length > 0 && selected && (
               <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="text-xs font-semibold text-slate-700 mb-2">Selected: {selected.customer_id}</div>
+                <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-semibold text-slate-700">Selected: {selected.customer_id}</div>
+                <div className="text-xs font-mono font-semibold text-slate-900">£{selected.balance}</div>
+              </div>
                 {selected.diffs.map(d => (
                   <div key={d.field} className="flex items-center justify-between text-xs py-0.5">
                     <span className="font-mono text-slate-500">{d.field}</span>
