@@ -2,10 +2,10 @@ use crate::report::CustomerResult;
 use rust_decimal::Decimal;
 
 pub struct CohortSummary {
-    pub worse:           u64,
-    pub better:          u64,
-    pub neutral:         u64,
-    pub total_delta:     Decimal,
+    pub worse: u64,
+    pub better: u64,
+    pub neutral: u64,
+    pub total_delta: Decimal,
     pub avg_delta_worse: Option<Decimal>,
 }
 
@@ -34,5 +34,11 @@ pub fn analyze(results: &[CustomerResult]) -> CohortSummary {
         None
     };
 
-    CohortSummary { worse, better, neutral, total_delta, avg_delta_worse }
+    CohortSummary {
+        worse,
+        better,
+        neutral,
+        total_delta,
+        avg_delta_worse,
+    }
 }

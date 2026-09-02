@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
-use proof_audit::{AuditEntry, FcaAuditPack, build_fca_pack};
+use proof_audit::{build_fca_pack, AuditEntry, FcaAuditPack};
 use proof_verify::Divergence;
 use sqlx::{
-    Row, SqlitePool,
     sqlite::{SqliteConnectOptions, SqliteJournalMode},
+    Row, SqlitePool,
 };
 use std::str::FromStr;
 
@@ -39,8 +39,8 @@ impl Db {
     // ─── audit ───────────────────────────────────────────────────────────────
 
     pub async fn insert_audit(&self, entry: &AuditEntry) -> Result<()> {
-        let id   = entry.id.to_string();
-        let ts   = entry.timestamp.to_rfc3339();
+        let id = entry.id.to_string();
+        let ts = entry.timestamp.to_rfc3339();
         let data = serde_json::to_string(entry)?;
 
         sqlx::query(
@@ -107,8 +107,8 @@ impl Db {
     // ─── divergences ─────────────────────────────────────────────────────────
 
     pub async fn insert_divergence(&self, d: &Divergence) -> Result<()> {
-        let id   = d.id.to_string();
-        let ts   = d.detected_at.to_rfc3339();
+        let id = d.id.to_string();
+        let ts = d.detected_at.to_rfc3339();
         let data = serde_json::to_string(d)?;
 
         sqlx::query(
@@ -162,19 +162,20 @@ impl Db {
     }
 
     pub async fn count_divergences(&self, spec_name: Option<&str>) -> Result<i64> {
-        let row = match spec_name {
-            Some(name) => sqlx::query(
-                "SELECT COUNT(*) as c FROM divergences WHERE spec_name = ? AND resolved = 0",
-            )
-            .bind(name)
-            .fetch_one(&self.pool)
-            .await?,
-            None => sqlx::query(
-                "SELECT COUNT(*) as c FROM divergences WHERE resolved = 0",
-            )
-            .fetch_one(&self.pool)
-            .await?,
-        };
+        let row =
+            match spec_name {
+                Some(name) => sqlx::query(
+                    "SELECT COUNT(*) as c FROM divergences WHERE spec_name = ? AND resolved = 0",
+                )
+                .bind(name)
+                .fetch_one(&self.pool)
+                .await?,
+                None => {
+                    sqlx::query("SELECT COUNT(*) as c FROM divergences WHERE resolved = 0")
+                        .fetch_one(&self.pool)
+                        .await?
+                }
+            };
         Ok(row.try_get("c")?)
     }
 
@@ -209,15 +210,15 @@ impl Db {
         rows.iter()
             .map(|row| {
                 let ts_str: String = row.try_get("timestamp")?;
-                let ok: i64        = row.try_get("ok")?;
+                let ok: i64 = row.try_get("ok")?;
                 let timestamp = DateTime::parse_from_rfc3339(&ts_str)
                     .map(|dt| dt.with_timezone(&Utc))
                     .unwrap_or_else(|_| Utc::now());
                 Ok(RecentEvent {
                     customer_id: row.try_get("customer_id")?,
-                    spec_name:   row.try_get("spec_name")?,
-                    event_type:  row.try_get("event_type")?,
-                    ok:          ok != 0,
+                    spec_name: row.try_get("spec_name")?,
+                    event_type: row.try_get("event_type")?,
+                    ok: ok != 0,
                     timestamp,
                 })
             })

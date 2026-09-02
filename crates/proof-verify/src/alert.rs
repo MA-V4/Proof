@@ -12,14 +12,23 @@ impl AlertSink for TerminalSink {
         eprintln!();
         eprintln!("  ╔══ DIVERGENCE ═══════════════════════════════════════╗");
         eprintln!("  ║  Spec:      {}", d.spec_name);
-        eprintln!("  ║  Customer:  {}   Balance: £{}", d.customer_id, d.balance);
+        eprintln!(
+            "  ║  Customer:  {}   Balance: £{}",
+            d.customer_id, d.balance
+        );
         eprintln!("  ║  Event:     {}", d.event_type);
         eprintln!("  ╠══════════════════════════════════════════════════════╣");
-        eprintln!("  ║  {:<20}  {:<12}  {:<12}  {}", "Field", "Spec", "System", "Delta");
+        eprintln!(
+            "  ║  {:<20}  {:<12}  {:<12}  {}",
+            "Field", "Spec", "System", "Delta"
+        );
         eprintln!("  ║  {}", "─".repeat(54));
         for diff in &d.diffs {
             let delta = diff.delta.map(|v| format!("{:+}", v)).unwrap_or_default();
-            eprintln!("  ║  {:<20}  {:<12}  {:<12}  {}", diff.field, diff.spec_value, diff.system_value, delta);
+            eprintln!(
+                "  ║  {:<20}  {:<12}  {:<12}  {}",
+                diff.field, diff.spec_value, diff.system_value, delta
+            );
         }
         eprintln!("  ╚══════════════════════════════════════════════════════╝");
         eprintln!();

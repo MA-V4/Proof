@@ -3,7 +3,9 @@ use crate::types::{CheckInput, RegulatoryFlag, Severity};
 pub struct RegulatoryRegistry;
 
 impl RegulatoryRegistry {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     pub fn check(&self, input: &CheckInput) -> Vec<RegulatoryFlag> {
         let mut flags = Vec::new();
@@ -26,8 +28,14 @@ impl RegulatoryRegistry {
 }
 
 impl Default for RegulatoryRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
-pub enum Verdict { DeployClean, DeployWithReview, DoNotDeploy }
+pub enum Verdict {
+    DeployClean,
+    DeployWithReview,
+    DoNotDeploy,
+}

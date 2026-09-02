@@ -1,5 +1,5 @@
-use axum::{extract::State, Json};
 use crate::state::{RecentEvent, SharedState};
+use axum::{extract::State, Json};
 
 pub async fn recent_events(State(state): State<SharedState>) -> Json<Vec<RecentEvent>> {
     let s = state.read().await;

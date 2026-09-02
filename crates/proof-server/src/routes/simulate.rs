@@ -1,7 +1,7 @@
+use crate::{error::AppResult, state::SharedState};
 use axum::{extract::State, Json};
 use proof_eval::types::EvalInput;
 use proof_sim::SimulationReport;
-use crate::{error::AppResult, state::SharedState};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -20,7 +20,9 @@ pub async fn simulate(
 ) -> AppResult<Json<SimulationReport>> {
     let s = state.read().await;
 
-    let old_spec = s.specs.get(&body.old_spec_name)
+    let old_spec = s
+        .specs
+        .get(&body.old_spec_name)
         .ok_or_else(|| anyhow::anyhow!("spec '{}' not found", body.old_spec_name))?
         .clone();
 

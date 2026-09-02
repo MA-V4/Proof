@@ -1,15 +1,18 @@
 use anyhow::{anyhow, Result};
-use rust_decimal::Decimal;
 use proof_verify::alert::AlertSink;
+use rust_decimal::Decimal;
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
-        Some("check")    => cmd_check(&args[2..]),
-        Some("ir")       => cmd_ir(&args[2..]),
-        Some("verify")   => cmd_verify(&args[2..]),
+        Some("check") => cmd_check(&args[2..]),
+        Some("ir") => cmd_ir(&args[2..]),
+        Some("verify") => cmd_verify(&args[2..]),
         Some("simulate") => cmd_simulate(&args[2..]),
-        Some("audit")    => { eprintln!("audit: Phase 8"); Ok(()) }
+        Some("audit") => {
+            eprintln!("audit: Phase 8");
+            Ok(())
+        }
         Some("diff") => cmd_diff(&args[2..]),
         _ => {
             println!("PROOF: financial logic, verified pure.\n");
@@ -26,11 +29,13 @@ fn main() -> Result<()> {
 // ─── simulate ────────────────────────────────────────────────────────────────
 
 fn cmd_simulate(args: &[String]) -> Result<()> {
-    let spec_path = args.first()
-        .ok_or_else(|| anyhow!("usage: proof simulate <spec.proof> --new <v2.proof> --portfolio <portfolio.ndjson>"))?;
+    let spec_path = args.first().ok_or_else(|| {
+        anyhow!(
+            "usage: proof simulate <spec.proof> --new <v2.proof> --portfolio <portfolio.ndjson>"
+        )
+    })?;
 
-    let new_path = flag(args, "--new")
-        .ok_or_else(|| anyhow!("--new <v2.proof> required"))?;
+    let new_path = flag(args, "--new").ok_or_else(|| anyhow!("--new <v2.proof> required"))?;
 
     let portfolio_path = flag(args, "--portfolio")
         .ok_or_else(|| anyhow!("--portfolio <portfolio.ndjson> required"))?;
@@ -66,9 +71,9 @@ fn cmd_simulate(args: &[String]) -> Result<()> {
         println!("  ─────────────────────────────────────────────");
         for flag in &report.regulatory_flags {
             let icon = match flag.severity {
-                proof_regulatory::Severity::Block  => "✗",
+                proof_regulatory::Severity::Block => "✗",
                 proof_regulatory::Severity::Review => "⚠",
-                proof_regulatory::Severity::Info   => "i",
+                proof_regulatory::Severity::Info => "i",
             };
             println!("  {}  {} - {:?}", icon, flag.rule, flag.severity);
             println!("     {}", flag.description);
@@ -81,9 +86,9 @@ fn cmd_simulate(args: &[String]) -> Result<()> {
     }
 
     let verdict_str = match report.verdict {
-        proof_regulatory::Verdict::DeployClean        => "DEPLOY - no concerns",
-        proof_regulatory::Verdict::DeployWithReview   => "DEPLOY WITH REVIEW",
-        proof_regulatory::Verdict::DoNotDeploy        => "DO NOT DEPLOY",
+        proof_regulatory::Verdict::DeployClean => "DEPLOY - no concerns",
+        proof_regulatory::Verdict::DeployWithReview => "DEPLOY WITH REVIEW",
+        proof_regulatory::Verdict::DoNotDeploy => "DO NOT DEPLOY",
     };
     println!("  Verdict: {}\n", verdict_str);
 
@@ -98,18 +103,21 @@ fn cmd_simulate(args: &[String]) -> Result<()> {
 
 #[derive(serde::Deserialize)]
 struct CheckInput {
-    balance:           Decimal,
+    balance: Decimal,
     #[serde(default = "default_event")]
-    event:             String,
+    event: String,
     #[serde(default)]
     days_since_joined: Option<u32>,
     #[serde(default)]
-    product_count:     Option<u32>,
+    product_count: Option<u32>,
 }
-fn default_event() -> String { "daily_accrual".into() }
+fn default_event() -> String {
+    "daily_accrual".into()
+}
 
 fn cmd_check(args: &[String]) -> Result<()> {
-    let spec_path = args.first()
+    let spec_path = args
+        .first()
         .ok_or_else(|| anyhow!("usage: proof check <spec.proof> [--input '{{...}}']"))?;
 
     let spec = load_spec(spec_path)?;
@@ -121,57 +129,78 @@ fn cmd_check(args: &[String]) -> Result<()> {
         println!("  Regulator:    {:?}", spec.regulator);
         println!("  Category:     {:?}", spec.category);
         if let Some(i) = &spec.interest {
-            println!("  Interest:     base_rate={}%  tiers={}", i.base_rate.0, i.tiers.len());
+            println!(
+                "  Interest:     base_rate={}%  tiers={}",
+                i.base_rate.0,
+                i.tiers.len()
+            );
         }
-        if spec.fees.is_some()        { println!("  Fees:         yes"); }
-        if spec.protection.is_some()  { println!("  Protection:   yes"); }
-        if spec.obligations.is_some() { println!("  Obligations:  yes"); }
+        if spec.fees.is_some() {
+            println!("  Fees:         yes");
+        }
+        if spec.protection.is_some() {
+            println!("  Protection:   yes");
+        }
+        if spec.obligations.is_some() {
+            println!("  Obligations:  yes");
+        }
         println!();
         return Ok(());
     };
 
-    let ci: CheckInput = serde_json::from_str(json)
-        .map_err(|e| anyhow!("--input JSON error: {}", e))?;
+    let ci: CheckInput =
+        serde_json::from_str(json).map_err(|e| anyhow!("--input JSON error: {}", e))?;
 
     let event_type = parse_event_type(&ci.event)?;
     let input = proof_eval::types::EvalInput {
-        customer_id:       "cli".into(),
-        event_type:        event_type.clone(),
-        balance:           ci.balance,
+        customer_id: "cli".into(),
+        event_type: event_type.clone(),
+        balance: ci.balance,
         days_since_joined: ci.days_since_joined,
-        product_count:     ci.product_count,
+        product_count: ci.product_count,
     };
 
-    let output = proof_eval::evaluate(&spec, &input)
-        .map_err(|e| anyhow!("evaluation error: {}", e))?;
+    let output =
+        proof_eval::evaluate(&spec, &input).map_err(|e| anyhow!("evaluation error: {}", e))?;
 
     println!("\nPROOF v{}\n", env!("CARGO_PKG_VERSION"));
     println!("  Specification: {}", spec.name);
     println!("  Event:         {}", event_type);
     println!("  Balance:       £{}", ci.balance);
-    if let Some(d) = ci.days_since_joined { println!("  Member for:    {} days", d); }
+    if let Some(d) = ci.days_since_joined {
+        println!("  Member for:    {} days", d);
+    }
     println!();
-    if let Some(t) = &output.applied_tier  { println!("  Tier:          {}", t); }
-    if let Some(r) = &output.rate_applied  { println!("  Rate:          {}%", r); }
-    if let Some(a) = &output.amount        { println!("  Result:        £{}", a); }
+    if let Some(t) = &output.applied_tier {
+        println!("  Tier:          {}", t);
+    }
+    if let Some(r) = &output.rate_applied {
+        println!("  Rate:          {}%", r);
+    }
+    if let Some(a) = &output.amount {
+        println!("  Result:        £{}", a);
+    }
     println!();
-    for line in &output.reasoning          { println!("  {}", line); }
+    for line in &output.reasoning {
+        println!("  {}", line);
+    }
     println!();
     println!("  Spec check: OK\n");
     Ok(())
 }
 
-//  verify 
+//  verify
 
 fn cmd_verify(args: &[String]) -> Result<()> {
-    let spec_path = args.first()
+    let spec_path = args
+        .first()
         .ok_or_else(|| anyhow!("usage: proof verify <spec.proof> --batch file.ndjson"))?;
 
     let spec = load_spec(spec_path)?;
 
     if let Some(json) = flag(args, "--event") {
-        let event: proof_ingest::SystemEvent = serde_json::from_str(json)
-            .map_err(|e| anyhow!("--event JSON error: {}", e))?;
+        let event: proof_ingest::SystemEvent =
+            serde_json::from_str(json).map_err(|e| anyhow!("--event JSON error: {}", e))?;
         let (input, system_output) = proof_ingest::normalise(event);
 
         println!("\nPROOF v{}\n", env!("CARGO_PKG_VERSION"));
@@ -181,8 +210,12 @@ fn cmd_verify(args: &[String]) -> Result<()> {
         println!("  Balance:       £{}", input.balance);
 
         match proof_verify::compare(&spec, &input, &system_output)? {
-            None    => { println!("\n  Result: OK - matches specification\n"); }
-            Some(d) => { proof_verify::alert::TerminalSink.emit(&d); }
+            None => {
+                println!("\n  Result: OK - matches specification\n");
+            }
+            Some(d) => {
+                proof_verify::alert::TerminalSink.emit(&d);
+            }
         }
         return Ok(());
     }
@@ -196,7 +229,9 @@ fn cmd_verify(args: &[String]) -> Result<()> {
 
         for (input, system_output) in &events {
             match proof_verify::compare(&spec, input, system_output)? {
-                None    => { println!("  OK  {}  £{}", input.customer_id, input.balance); }
+                None => {
+                    println!("  OK  {}  £{}", input.customer_id, input.balance);
+                }
                 Some(d) => {
                     proof_verify::alert::TerminalSink.emit(&d);
                     divergences += 1;
@@ -205,8 +240,14 @@ fn cmd_verify(args: &[String]) -> Result<()> {
         }
 
         println!();
-        println!("  Verified: {}   Divergences: {}", events.len(), divergences);
-        if divergences > 0 { std::process::exit(1); }
+        println!(
+            "  Verified: {}   Divergences: {}",
+            events.len(),
+            divergences
+        );
+        if divergences > 0 {
+            std::process::exit(1);
+        }
         println!();
         return Ok(());
     }
@@ -217,7 +258,8 @@ fn cmd_verify(args: &[String]) -> Result<()> {
 //  ir
 
 fn cmd_ir(args: &[String]) -> Result<()> {
-    let spec_path = args.first()
+    let spec_path = args
+        .first()
         .ok_or_else(|| anyhow!("usage: proof ir <spec.proof>"))?;
     let spec = load_spec(spec_path)?;
     println!("{}", serde_json::to_string_pretty(&spec)?);
@@ -227,18 +269,19 @@ fn cmd_ir(args: &[String]) -> Result<()> {
 // helpers
 
 fn load_spec(path: &str) -> Result<proof_dsl::ast::ProductSpec> {
-    let src = std::fs::read_to_string(path)
-        .map_err(|e| anyhow!("cannot read {}: {}", path, e))?;
+    let src = std::fs::read_to_string(path).map_err(|e| anyhow!("cannot read {}: {}", path, e))?;
     proof_dsl::parse(&src).map_err(|e| anyhow!("parse error in {}: {}", path, e))
 }
 
 fn flag<'a>(args: &'a [String], name: &str) -> Option<&'a str> {
-    args.windows(2).find(|w| w[0] == name).map(|w| w[1].as_str())
+    args.windows(2)
+        .find(|w| w[0] == name)
+        .map(|w| w[1].as_str())
 }
 
 fn parse_event_type(s: &str) -> Result<proof_eval::types::EventType> {
     Ok(match s {
-        "daily_accrual"    => proof_eval::types::EventType::DailyAccrual,
+        "daily_accrual" => proof_eval::types::EventType::DailyAccrual,
         "monthly_interest" => proof_eval::types::EventType::MonthlyInterestPayment,
         s if s.starts_with("fee:") => proof_eval::types::EventType::FeeCharge {
             fee_name: s.trim_start_matches("fee:").into(),
@@ -248,14 +291,16 @@ fn parse_event_type(s: &str) -> Result<proof_eval::types::EventType> {
 }
 
 fn cmd_diff(args: &[String]) -> Result<()> {
-    let old_path = args.first()
+    let old_path = args
+        .first()
         .ok_or_else(|| anyhow!("usage: proof diff <old.proof> <new.proof>"))?;
-    let new_path = args.get(1)
+    let new_path = args
+        .get(1)
         .ok_or_else(|| anyhow!("usage: proof diff <old.proof> <new.proof>"))?;
 
     let old_spec = load_spec(old_path)?;
     let new_spec = load_spec(new_path)?;
-    let items    = proof_dsl::diff_specs(&old_spec, &new_spec);
+    let items = proof_dsl::diff_specs(&old_spec, &new_spec);
 
     println!("\nPROOF diff - {} → {}\n", old_path, new_path);
 
@@ -264,7 +309,11 @@ fn cmd_diff(args: &[String]) -> Result<()> {
         return Ok(());
     }
 
-    println!("  {} change{}:\n", items.len(), if items.len() == 1 { "" } else { "s" });
+    println!(
+        "  {} change{}:\n",
+        items.len(),
+        if items.len() == 1 { "" } else { "s" }
+    );
 
     for item in &items {
         use proof_dsl::DiffItem::*;
@@ -273,15 +322,23 @@ fn cmd_diff(args: &[String]) -> Result<()> {
                 println!("  base_rate");
                 println!("    {}% → {}%  ({:+}%)\n", old, new, delta);
             }
-            TierThresholdChanged { tier_index, old_threshold, new_threshold } => {
+            TierThresholdChanged {
+                tier_index,
+                old_threshold,
+                new_threshold,
+            } => {
                 println!("  tier_{} threshold", tier_index + 1);
                 println!("    £{} → £{}\n", old_threshold, new_threshold);
             }
-            TierRateChanged { tier_index, old_rate, new_rate } => {
+            TierRateChanged {
+                tier_index,
+                old_rate,
+                new_rate,
+            } => {
                 println!("  tier_{} rate", tier_index + 1);
                 println!("    {} → {}\n", old_rate, new_rate);
             }
-            TierAdded   { tier_index } => println!("  tier_{} added\n",   tier_index + 1),
+            TierAdded { tier_index } => println!("  tier_{} added\n", tier_index + 1),
             TierRemoved { tier_index } => println!("  tier_{} removed\n", tier_index + 1),
             PromotionalRateChanged { old, new } => {
                 println!("  promotional rate");
@@ -293,6 +350,55 @@ fn cmd_diff(args: &[String]) -> Result<()> {
             }
         }
     }
+
+    Ok(())
+}
+
+fn cmd_bootstrap(args: &[String]) -> Result<()> {
+    let source_path = args.first().ok_or_else(|| {
+        anyhow!("usage: proof bootstrap <source.py|.ts|.java> [--output spec.proof] [--ai]")
+    })?;
+
+    let path = std::path::Path::new(source_path);
+    let use_ai = args.iter().any(|a| a == "--ai");
+
+    println!("\nPROOF bootstrap\n");
+    println!("  Source:   {}", source_path);
+    println!("  Language: {}", proof_bootstrap::detect_language(path));
+
+    let result = if use_ai {
+        let api_key = std::env::var("ANTHROPIC_API_KEY").map_err(|_| {
+            anyhow!(
+            "--ai requires ANTHROPIC_API_KEY to be set.\n  $env:ANTHROPIC_API_KEY = \"sk-ant-...\""
+        )
+        })?;
+        println!("  Mode:     AI-assisted (Claude)\n");
+        proof_bootstrap::bootstrap_with_ai(path, &api_key)?
+    } else {
+        println!("  Mode:     Heuristic (zero cost)\n");
+        println!("  Tip:      Add --ai for higher quality extraction using Claude.\n");
+        proof_bootstrap::bootstrap(path)?
+    };
+
+    if result.valid {
+        println!("  Spec validated successfully.\n");
+    } else {
+        println!("  Warning: spec has parse errors. Review before using.");
+        if let Some(ref err) = result.parse_error {
+            println!("  {}\n", err);
+        }
+    }
+
+    let out_path = flag(args, "--output")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| path.with_extension("proof"));
+
+    std::fs::write(&out_path, &result.spec_text)
+        .map_err(|e| anyhow!("cannot write {}: {}", out_path.display(), e))?;
+
+    println!("{}", result.spec_text);
+    println!("  Written to: {}", out_path.display());
+    println!("  Review # INFERRED and # TODO: verify markers before production use.\n");
 
     Ok(())
 }

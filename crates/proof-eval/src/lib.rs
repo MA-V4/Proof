@@ -3,9 +3,9 @@
 // This is what PROOF compares against your system's actual output.
 
 pub mod evaluator;
-pub mod types;
-pub mod interest;
 pub mod fees;
+pub mod interest;
+pub mod types;
 
 pub use evaluator::evaluate;
 pub use types::{EvalInput, EvalOutput, EventType};

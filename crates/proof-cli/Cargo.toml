@@ -14,6 +14,7 @@ proof-ingest     = { path = "../proof-ingest" }
 proof-verify     = { path = "../proof-verify" }
 proof-sim        = { path = "../proof-sim" }
 proof-regulatory = { path = "../proof-regulatory" }
+proof-bootstrap  = { path = "../proof-bootstrap" }
 serde            = { workspace = true }
 serde_json       = { workspace = true }
 anyhow           = { workspace = true }

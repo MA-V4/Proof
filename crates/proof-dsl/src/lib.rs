@@ -6,5 +6,5 @@ pub mod parser;
 
 pub use ast::ProductSpec;
 pub use diff::{diff_specs, DiffItem};
-pub use parser::parse;
 pub use error::ParseError;
+pub use parser::parse;

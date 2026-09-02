@@ -1,7 +1,7 @@
-use rust_decimal::Decimal;
 use crate::ast::*;
 use crate::error::ParseError;
 use crate::lexer::{Lexer, Token};
+use rust_decimal::Decimal;
 
 pub fn parse(source: &str) -> Result<ProductSpec, ParseError> {
     let tokens = Lexer::new(source).tokenise()?;
@@ -10,7 +10,7 @@ pub fn parse(source: &str) -> Result<ProductSpec, ParseError> {
 
 struct Parser {
     tokens: Vec<Token>,
-    pos:    usize,
+    pos: usize,
 }
 
 impl Parser {
@@ -24,7 +24,9 @@ impl Parser {
 
     fn advance(&mut self) -> Token {
         let tok = self.tokens.get(self.pos).cloned().unwrap_or(Token::Eof);
-        if self.pos < self.tokens.len() - 1 { self.pos += 1; }
+        if self.pos < self.tokens.len() - 1 {
+            self.pos += 1;
+        }
         tok
     }
 
@@ -60,45 +62,51 @@ impl Parser {
         let mut spec = ProductSpec {
             name,
             jurisdiction: Jurisdiction::UK,
-            regulator:    Regulator::FCA,
-            category:     ProductCategory::Deposit,
-            interest:     None,
-            fees:         None,
-            protection:   None,
-            obligations:  None,
+            regulator: Regulator::FCA,
+            category: ProductCategory::Deposit,
+            interest: None,
+            fees: None,
+            protection: None,
+            obligations: None,
         };
 
         loop {
             match self.peek().clone() {
-                Token::RBrace     => { self.advance(); break; }
-                Token::Eof        => return Err(ParseError::Other("unexpected EOF in product".into())),
+                Token::RBrace => {
+                    self.advance();
+                    break;
+                }
+                Token::Eof => return Err(ParseError::Other("unexpected EOF in product".into())),
                 Token::Jurisdiction => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     spec.jurisdiction = match self.expect_ident()?.as_str() {
                         "UK" => Jurisdiction::UK,
                         "EU" => Jurisdiction::EU,
                         "US" => Jurisdiction::US,
-                        s    => return Err(ParseError::Other(format!("unknown jurisdiction: {}", s))),
+                        s => return Err(ParseError::Other(format!("unknown jurisdiction: {}", s))),
                     };
                 }
                 Token::Regulator => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     spec.regulator = match self.expect_ident()?.as_str() {
-                        "FCA"  => Regulator::FCA,
-                        "PRA"  => Regulator::PRA,
+                        "FCA" => Regulator::FCA,
+                        "PRA" => Regulator::PRA,
                         "CFPB" => Regulator::CFPB,
-                        "EBA"  => Regulator::EBA,
-                        s      => return Err(ParseError::Other(format!("unknown regulator: {}", s))),
+                        "EBA" => Regulator::EBA,
+                        s => return Err(ParseError::Other(format!("unknown regulator: {}", s))),
                     };
                 }
                 Token::Category => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     spec.category = match self.expect_ident()?.as_str() {
-                        "deposit"    => ProductCategory::Deposit,
-                        "credit"     => ProductCategory::Credit,
-                        "mortgage"   => ProductCategory::Mortgage,
+                        "deposit" => ProductCategory::Deposit,
+                        "credit" => ProductCategory::Credit,
+                        "mortgage" => ProductCategory::Mortgage,
                         "investment" => ProductCategory::Investment,
-                        s            => return Err(ParseError::Other(format!("unknown category: {}", s))),
+                        s => return Err(ParseError::Other(format!("unknown category: {}", s))),
                     };
                 }
                 Token::Interest => {
@@ -117,10 +125,12 @@ impl Parser {
                     self.advance();
                     spec.obligations = Some(self.parse_obligations()?);
                 }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("unexpected token in product block: {:?}", other),
-                }),
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("unexpected token in product block: {:?}", other),
+                    })
+                }
             }
         }
         Ok(spec)
@@ -134,26 +144,49 @@ impl Parser {
         let mut tiers = Vec::new();
         let mut promotional = None;
         let mut accrual = Accrual {
-            frequency:       AccrualFrequency::Daily,
-            basis:           DayCountBasis::Act365,
-            compound:        CompoundFrequency::Annually,
+            frequency: AccrualFrequency::Daily,
+            basis: DayCountBasis::Act365,
+            compound: CompoundFrequency::Annually,
             minimum_payable: None,
         };
         loop {
             match self.peek().clone() {
-                Token::RBrace      => { self.advance(); break; }
-                Token::Eof         => return Err(ParseError::Other("unexpected EOF in interest".into())),
-                Token::BaseRate    => { self.advance(); self.expect(&Token::Colon)?; base_rate = self.parse_rate_lit()?; }
-                Token::Tiers       => { self.advance(); tiers = self.parse_tiers()?; }
-                Token::Promotional => { self.advance(); promotional = Some(self.parse_promotional()?); }
-                Token::Accrual     => { self.advance(); accrual = self.parse_accrual()?; }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("unexpected token in interest: {:?}", other),
-                }),
+                Token::RBrace => {
+                    self.advance();
+                    break;
+                }
+                Token::Eof => return Err(ParseError::Other("unexpected EOF in interest".into())),
+                Token::BaseRate => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
+                    base_rate = self.parse_rate_lit()?;
+                }
+                Token::Tiers => {
+                    self.advance();
+                    tiers = self.parse_tiers()?;
+                }
+                Token::Promotional => {
+                    self.advance();
+                    promotional = Some(self.parse_promotional()?);
+                }
+                Token::Accrual => {
+                    self.advance();
+                    accrual = self.parse_accrual()?;
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("unexpected token in interest: {:?}", other),
+                    })
+                }
             }
         }
-        Ok(InterestBlock { base_rate, tiers, promotional, accrual })
+        Ok(InterestBlock {
+            base_rate,
+            tiers,
+            promotional,
+            accrual,
+        })
     }
 
     fn parse_tiers(&mut self) -> Result<Vec<Tier>, ParseError> {
@@ -161,9 +194,12 @@ impl Parser {
         let mut tiers = Vec::new();
         loop {
             match self.peek().clone() {
-                Token::RBrace    => { self.advance(); break; }
-                Token::Eof       => return Err(ParseError::Other("unexpected EOF in tiers".into())),
-                Token::When      => {
+                Token::RBrace => {
+                    self.advance();
+                    break;
+                }
+                Token::Eof => return Err(ParseError::Other("unexpected EOF in tiers".into())),
+                Token::When => {
                     self.advance();
                     let condition = self.parse_condition()?;
                     self.expect(&Token::Rate)?;
@@ -176,12 +212,17 @@ impl Parser {
                     self.expect(&Token::Rate)?;
                     self.expect(&Token::Colon)?;
                     let rate = self.parse_rate_expr()?;
-                    tiers.push(Tier { condition: Condition::Otherwise, rate });
+                    tiers.push(Tier {
+                        condition: Condition::Otherwise,
+                        rate,
+                    });
                 }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("unexpected token in tiers: {:?}", other),
-                }),
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("unexpected token in tiers: {:?}", other),
+                    })
+                }
             }
         }
         Ok(tiers)
@@ -192,20 +233,30 @@ impl Parser {
         let op = match self.advance() {
             Token::Gte => ">=",
             Token::Lte => "<=",
-            Token::Gt  => ">",
-            Token::Lt  => "<",
-            other => return Err(ParseError::Other(format!("expected comparison op, got {:?}", other))),
+            Token::Gt => ">",
+            Token::Lt => "<",
+            other => {
+                return Err(ParseError::Other(format!(
+                    "expected comparison op, got {:?}",
+                    other
+                )))
+            }
         };
         let value = match self.advance() {
             Token::Number(n) => n,
-            other => return Err(ParseError::Other(format!("expected number, got {:?}", other))),
+            other => {
+                return Err(ParseError::Other(format!(
+                    "expected number, got {:?}",
+                    other
+                )))
+            }
         };
 
         match (field.as_str(), op) {
             ("balance", ">=") => Ok(Condition::BalanceGte(value)),
-            ("balance", ">")  => Ok(Condition::BalanceGte(value)),
+            ("balance", ">") => Ok(Condition::BalanceGte(value)),
             ("balance", "<=") => Ok(Condition::BalanceLt(value)),
-            ("balance", "<")  => Ok(Condition::BalanceLt(value)),
+            ("balance", "<") => Ok(Condition::BalanceLt(value)),
             ("days_since_joined", "<=") | ("days_since_joined", "<") => {
                 Ok(Condition::DaysSinceJoinedLte(to_u32(value)?))
             }
@@ -225,13 +276,22 @@ impl Parser {
 
     fn parse_rate_expr(&mut self) -> Result<RateExpr, ParseError> {
         match self.peek().clone() {
-            Token::Percentage(p) => { self.advance(); Ok(RateExpr::Literal(Rate(p))) }
+            Token::Percentage(p) => {
+                self.advance();
+                Ok(RateExpr::Literal(Rate(p)))
+            }
             Token::BaseRate => {
                 self.advance();
                 match self.peek().clone() {
-                    Token::Plus  => { self.advance(); Ok(RateExpr::BaseRatePlus(self.parse_rate_lit()?)) }
-                    Token::Minus => { self.advance(); Ok(RateExpr::BaseRateMinus(self.parse_rate_lit()?)) }
-                    _            => Ok(RateExpr::BaseRate)
+                    Token::Plus => {
+                        self.advance();
+                        Ok(RateExpr::BaseRatePlus(self.parse_rate_lit()?))
+                    }
+                    Token::Minus => {
+                        self.advance();
+                        Ok(RateExpr::BaseRateMinus(self.parse_rate_lit()?))
+                    }
+                    _ => Ok(RateExpr::BaseRate),
                 }
             }
             other => Err(ParseError::InvalidRate(format!("{:?}", other))),
@@ -248,28 +308,52 @@ impl Parser {
         let mut non_renewable = false;
         loop {
             match self.peek().clone() {
-                Token::RBrace      => { self.advance(); break; }
-                Token::Eof         => return Err(ParseError::Other("unexpected EOF in promotional".into())),
-                Token::Condition   => { self.advance(); self.expect(&Token::Colon)?; condition = self.parse_condition()?; }
-                Token::Rate        => { self.advance(); self.expect(&Token::Colon)?; rate = self.parse_rate_expr()?; }
+                Token::RBrace => {
+                    self.advance();
+                    break;
+                }
+                Token::Eof => {
+                    return Err(ParseError::Other("unexpected EOF in promotional".into()))
+                }
+                Token::Condition => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
+                    condition = self.parse_condition()?;
+                }
+                Token::Rate => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
+                    rate = self.parse_rate_expr()?;
+                }
                 Token::ExpiresAfter => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     if let Token::Number(n) = self.advance() {
                         expires_after_days = to_u32(n)?;
-                        if self.peek() == &Token::Days { self.advance(); }
+                        if self.peek() == &Token::Days {
+                            self.advance();
+                        }
                     }
                 }
                 Token::NonRenewable => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     non_renewable = self.advance() == Token::True;
                 }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("unexpected token in promotional: {:?}", other),
-                }),
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("unexpected token in promotional: {:?}", other),
+                    })
+                }
             }
         }
-        Ok(Promotional { condition, rate, expires_after_days, non_renewable })
+        Ok(Promotional {
+            condition,
+            rate,
+            expires_after_days,
+            non_renewable,
+        })
     }
 
     // ───────── accrual ─────────
@@ -282,50 +366,64 @@ impl Parser {
         let mut minimum_payable = None;
         loop {
             match self.peek().clone() {
-                Token::RBrace        => { self.advance(); break; }
-                Token::Eof           => return Err(ParseError::Other("unexpected EOF in accrual".into())),
-                Token::Frequency     => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                Token::RBrace => {
+                    self.advance();
+                    break;
+                }
+                Token::Eof => return Err(ParseError::Other("unexpected EOF in accrual".into())),
+                Token::Frequency => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     frequency = match self.expect_ident()?.as_str() {
-                        "daily"     => AccrualFrequency::Daily,
-                        "monthly"   => AccrualFrequency::Monthly,
+                        "daily" => AccrualFrequency::Daily,
+                        "monthly" => AccrualFrequency::Monthly,
                         "quarterly" => AccrualFrequency::Quarterly,
-                        "annually"  => AccrualFrequency::Annually,
-                        s           => return Err(ParseError::Other(format!("unknown frequency: {}", s))),
+                        "annually" => AccrualFrequency::Annually,
+                        s => return Err(ParseError::Other(format!("unknown frequency: {}", s))),
                     };
                 }
-                Token::Basis         => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                Token::Basis => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     basis = match self.expect_ident()?.as_str() {
                         "ACT/365" => DayCountBasis::Act365,
                         "ACT/360" => DayCountBasis::Act360,
-                        "30/360"  => DayCountBasis::Thirty360,
-                        s         => return Err(ParseError::Other(format!("unknown basis: {}", s))),
+                        "30/360" => DayCountBasis::Thirty360,
+                        s => return Err(ParseError::Other(format!("unknown basis: {}", s))),
                     };
                 }
-                Token::Compound      => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                Token::Compound => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     compound = match self.expect_ident()?.as_str() {
-                        "daily"     => CompoundFrequency::Daily,
-                        "monthly"   => CompoundFrequency::Monthly,
+                        "daily" => CompoundFrequency::Daily,
+                        "monthly" => CompoundFrequency::Monthly,
                         "quarterly" => CompoundFrequency::Quarterly,
-                        "annually"  => CompoundFrequency::Annually,
-                        s           => return Err(ParseError::Other(format!("unknown compound: {}", s))),
+                        "annually" => CompoundFrequency::Annually,
+                        s => return Err(ParseError::Other(format!("unknown compound: {}", s))),
                     };
                 }
                 Token::MinimumPayable => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     if let Token::Money { amount, .. } = self.advance() {
                         minimum_payable = Some(amount);
                     }
                 }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("unexpected token in accrual: {:?}", other),
-                }),
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("unexpected token in accrual: {:?}", other),
+                    })
+                }
             }
         }
-        Ok(Accrual { frequency, basis, compound, minimum_payable })
+        Ok(Accrual {
+            frequency,
+            basis,
+            compound,
+            minimum_payable,
+        })
     }
 
     // ───────── fees ─────────
@@ -335,44 +433,70 @@ impl Parser {
         let mut fees = Vec::new();
         loop {
             match self.peek().clone() {
-                Token::RBrace => { self.advance(); break; }
-                Token::Eof    => return Err(ParseError::Other("unexpected EOF in fees".into())),
-                Token::Fee    => {
+                Token::RBrace => {
+                    self.advance();
+                    break;
+                }
+                Token::Eof => return Err(ParseError::Other("unexpected EOF in fees".into())),
+                Token::Fee => {
                     self.advance();
                     let name = match self.advance() {
                         Token::Str(s) => s,
-                        other => return Err(ParseError::Other(format!("expected fee name, got {:?}", other))),
+                        other => {
+                            return Err(ParseError::Other(format!(
+                                "expected fee name, got {:?}",
+                                other
+                            )))
+                        }
                     };
                     self.expect(&Token::LBrace)?;
                     let mut amount = FeeAmount::Fixed(Decimal::ZERO);
                     let mut waivable = false;
                     loop {
                         match self.peek().clone() {
-                            Token::RBrace => { self.advance(); break; }
+                            Token::RBrace => {
+                                self.advance();
+                                break;
+                            }
                             Token::Ident(ref s) if s == "amount" => {
-                                self.advance(); self.expect(&Token::Colon)?;
+                                self.advance();
+                                self.expect(&Token::Colon)?;
                                 amount = match self.advance() {
                                     Token::Money { amount: a, .. } => FeeAmount::Fixed(a),
-                                    Token::Percentage(p)           => FeeAmount::Percentage(Rate(p)),
-                                    other => return Err(ParseError::Other(format!("expected fee amount, got {:?}", other))),
+                                    Token::Percentage(p) => FeeAmount::Percentage(Rate(p)),
+                                    other => {
+                                        return Err(ParseError::Other(format!(
+                                            "expected fee amount, got {:?}",
+                                            other
+                                        )))
+                                    }
                                 };
                             }
                             Token::Waivable => {
-                                self.advance(); self.expect(&Token::Colon)?;
+                                self.advance();
+                                self.expect(&Token::Colon)?;
                                 waivable = self.advance() == Token::True;
                             }
-                            other => return Err(ParseError::UnexpectedToken {
-                                line: 0,
-                                message: format!("{:?}", other),
-                            }),
+                            other => {
+                                return Err(ParseError::UnexpectedToken {
+                                    line: 0,
+                                    message: format!("{:?}", other),
+                                })
+                            }
                         }
                     }
-                    fees.push(Fee { name, amount, waivable });
+                    fees.push(Fee {
+                        name,
+                        amount,
+                        waivable,
+                    });
                 }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("unexpected in fees: {:?}", other),
-                }),
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("unexpected in fees: {:?}", other),
+                    })
+                }
             }
         }
         Ok(FeesBlock { fees })
@@ -386,16 +510,28 @@ impl Parser {
         let mut limit = Decimal::ZERO;
         loop {
             match self.peek().clone() {
-                Token::RBrace  => { self.advance(); break; }
-                Token::Scheme  => { self.advance(); self.expect(&Token::Colon)?; scheme = self.expect_ident()?; }
-                Token::Limit   => {
-                    self.advance(); self.expect(&Token::Colon)?;
-                    if let Token::Money { amount, .. } = self.advance() { limit = amount; }
+                Token::RBrace => {
+                    self.advance();
+                    break;
                 }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("{:?}", other),
-                }),
+                Token::Scheme => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
+                    scheme = self.expect_ident()?;
+                }
+                Token::Limit => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
+                    if let Token::Money { amount, .. } = self.advance() {
+                        limit = amount;
+                    }
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("{:?}", other),
+                    })
+                }
             }
         }
         Ok(ProtectionBlock { scheme, limit })
@@ -410,33 +546,51 @@ impl Parser {
         let mut annual_summary = false;
         loop {
             match self.peek().clone() {
-                Token::RBrace            => { self.advance(); break; }
-                Token::CoolingOff        => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                Token::RBrace => {
+                    self.advance();
+                    break;
+                }
+                Token::CoolingOff => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     if let Token::Number(n) = self.advance() {
-                        if self.peek() == &Token::Days { self.advance(); }
+                        if self.peek() == &Token::Days {
+                            self.advance();
+                        }
                         cooling_off_days = Some(to_u32(n)?);
                     }
                 }
-                Token::RateChangeNotice  => {
-                    self.advance(); self.expect(&Token::Colon)?;
+                Token::RateChangeNotice => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
                     if let Token::Number(n) = self.advance() {
-                        if self.peek() == &Token::Days { self.advance(); }
+                        if self.peek() == &Token::Days {
+                            self.advance();
+                        }
                         rate_change_notice_days = Some(to_u32(n)?);
                     }
                 }
-                Token::AnnualSummary     => {
-                    self.advance(); self.expect(&Token::Colon)?;
-                    if self.peek() == &Token::Required { self.advance(); }
+                Token::AnnualSummary => {
+                    self.advance();
+                    self.expect(&Token::Colon)?;
+                    if self.peek() == &Token::Required {
+                        self.advance();
+                    }
                     annual_summary = true;
                 }
-                other => return Err(ParseError::UnexpectedToken {
-                    line: 0,
-                    message: format!("{:?}", other),
-                }),
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: 0,
+                        message: format!("{:?}", other),
+                    })
+                }
             }
         }
-        Ok(ObligationsBlock { cooling_off_days, rate_change_notice_days, annual_summary })
+        Ok(ObligationsBlock {
+            cooling_off_days,
+            rate_change_notice_days,
+            annual_summary,
+        })
     }
 }
 

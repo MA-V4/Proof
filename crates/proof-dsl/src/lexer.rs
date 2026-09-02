@@ -1,21 +1,44 @@
-use rust_decimal::Decimal;
 use crate::error::ParseError;
+use rust_decimal::Decimal;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     // Block keywords
     Product,
-    Interest, Tiers, Promotional, Accrual,
-    Fees, Protection, Obligations,
+    Interest,
+    Tiers,
+    Promotional,
+    Accrual,
+    Fees,
+    Protection,
+    Obligations,
     // Field keywords
-    Jurisdiction, Regulator, Category,
-    BaseRate, When, Otherwise, Rate, Condition,
-    ExpiresAfter, NonRenewable,
-    Frequency, Basis, Compound, MinimumPayable,
-    Fee, Waivable, Scheme, Limit,
-    CoolingOff, RateChangeNotice, AnnualSummary,
+    Jurisdiction,
+    Regulator,
+    Category,
+    BaseRate,
+    When,
+    Otherwise,
+    Rate,
+    Condition,
+    ExpiresAfter,
+    NonRenewable,
+    Frequency,
+    Basis,
+    Compound,
+    MinimumPayable,
+    Fee,
+    Waivable,
+    Scheme,
+    Limit,
+    CoolingOff,
+    RateChangeNotice,
+    AnnualSummary,
     // Value keywords
-    Days, Required, True, False,
+    Days,
+    Required,
+    True,
+    False,
     // Literals
     Ident(String),
     Str(String),
@@ -23,10 +46,16 @@ pub enum Token {
     Percentage(Decimal),
     Money { currency: String, amount: Decimal },
     // Operators
-    Plus, Minus,
-    Gte, Lte, Gt, Lt,
+    Plus,
+    Minus,
+    Gte,
+    Lte,
+    Gt,
+    Lt,
     // Punctuation
-    LBrace, RBrace, Colon,
+    LBrace,
+    RBrace,
+    Colon,
     // End
     Eof,
 }
@@ -34,13 +63,17 @@ pub enum Token {
 #[allow(dead_code)]
 pub struct Lexer {
     input: Vec<char>,
-    pos:   usize,
+    pos: usize,
     pub line: usize,
 }
 
 impl Lexer {
     pub fn new(input: &str) -> Self {
-        Self { input: input.chars().collect(), pos: 0, line: 1 }
+        Self {
+            input: input.chars().collect(),
+            pos: 0,
+            line: 1,
+        }
     }
 
     fn peek(&self) -> Option<char> {
@@ -49,16 +82,28 @@ impl Lexer {
 
     fn advance(&mut self) -> Option<char> {
         let ch = self.input.get(self.pos).copied();
-        if ch == Some('\n') { self.line += 1; }
-        if self.pos < self.input.len() { self.pos += 1; }
+        if ch == Some('\n') {
+            self.line += 1;
+        }
+        if self.pos < self.input.len() {
+            self.pos += 1;
+        }
         ch
     }
 
     fn skip_ws(&mut self) {
         loop {
             match self.peek() {
-                Some(' ') | Some('\t') | Some('\r') | Some('\n') => { self.advance(); }
-                Some('#') => { while let Some(c) = self.advance() { if c == '\n' { break; } } }
+                Some(' ') | Some('\t') | Some('\r') | Some('\n') => {
+                    self.advance();
+                }
+                Some('#') => {
+                    while let Some(c) = self.advance() {
+                        if c == '\n' {
+                            break;
+                        }
+                    }
+                }
                 _ => break,
             }
         }
@@ -69,12 +114,14 @@ impl Lexer {
         let mut s = String::new();
         loop {
             match self.advance() {
-                None | Some('\n') => return Err(ParseError::UnexpectedToken {
-                    line: self.line,
-                    message: "unterminated string".into(),
-                }),
+                None | Some('\n') => {
+                    return Err(ParseError::UnexpectedToken {
+                        line: self.line,
+                        message: "unterminated string".into(),
+                    })
+                }
                 Some('"') => break,
-                Some(c)   => s.push(c),
+                Some(c) => s.push(c),
             }
         }
         Ok(s)
@@ -83,9 +130,16 @@ impl Lexer {
     fn read_number(&mut self) -> Decimal {
         let mut s = String::new();
         while let Some(c) = self.peek() {
-            if c.is_ascii_digit() || c == '.' { s.push(c); self.advance(); }
-            else if c == '_'                  { self.advance(); } // separator
-            else                              { break; }
+            if c.is_ascii_digit() || c == '.' {
+                s.push(c);
+                self.advance();
+            } else if c == '_' {
+                self.advance();
+            }
+            // separator
+            else {
+                break;
+            }
         }
         s.parse::<Decimal>().unwrap_or(Decimal::ZERO)
     }
@@ -93,48 +147,52 @@ impl Lexer {
     fn read_ident(&mut self) -> String {
         let mut s = String::new();
         while let Some(c) = self.peek() {
-            if c.is_alphanumeric() || c == '_' { s.push(c); self.advance(); }
-            else { break; }
+            if c.is_alphanumeric() || c == '_' {
+                s.push(c);
+                self.advance();
+            } else {
+                break;
+            }
         }
         s
     }
 
     fn keyword(s: &str) -> Option<Token> {
         Some(match s {
-            "product"            => Token::Product,
-            "jurisdiction"       => Token::Jurisdiction,
-            "regulator"          => Token::Regulator,
-            "category"           => Token::Category,
-            "interest"           => Token::Interest,
-            "base_rate"          => Token::BaseRate,
-            "tiers"              => Token::Tiers,
-            "when"               => Token::When,
-            "otherwise"          => Token::Otherwise,
-            "rate"               => Token::Rate,
-            "promotional"        => Token::Promotional,
-            "condition"          => Token::Condition,
-            "expires_after"      => Token::ExpiresAfter,
-            "non_renewable"      => Token::NonRenewable,
-            "accrual"            => Token::Accrual,
-            "frequency"          => Token::Frequency,
-            "basis"              => Token::Basis,
-            "compound"           => Token::Compound,
-            "minimum_payable"    => Token::MinimumPayable,
-            "fees"               => Token::Fees,
-            "fee"                => Token::Fee,
-            "waivable"           => Token::Waivable,
-            "protection"         => Token::Protection,
-            "scheme"             => Token::Scheme,
-            "limit"              => Token::Limit,
-            "obligations"        => Token::Obligations,
-            "cooling_off"        => Token::CoolingOff,
+            "product" => Token::Product,
+            "jurisdiction" => Token::Jurisdiction,
+            "regulator" => Token::Regulator,
+            "category" => Token::Category,
+            "interest" => Token::Interest,
+            "base_rate" => Token::BaseRate,
+            "tiers" => Token::Tiers,
+            "when" => Token::When,
+            "otherwise" => Token::Otherwise,
+            "rate" => Token::Rate,
+            "promotional" => Token::Promotional,
+            "condition" => Token::Condition,
+            "expires_after" => Token::ExpiresAfter,
+            "non_renewable" => Token::NonRenewable,
+            "accrual" => Token::Accrual,
+            "frequency" => Token::Frequency,
+            "basis" => Token::Basis,
+            "compound" => Token::Compound,
+            "minimum_payable" => Token::MinimumPayable,
+            "fees" => Token::Fees,
+            "fee" => Token::Fee,
+            "waivable" => Token::Waivable,
+            "protection" => Token::Protection,
+            "scheme" => Token::Scheme,
+            "limit" => Token::Limit,
+            "obligations" => Token::Obligations,
+            "cooling_off" => Token::CoolingOff,
             "rate_change_notice" => Token::RateChangeNotice,
-            "annual_summary"     => Token::AnnualSummary,
-            "days"               => Token::Days,
-            "required"           => Token::Required,
-            "true"               => Token::True,
-            "false"              => Token::False,
-            _                    => return None,
+            "annual_summary" => Token::AnnualSummary,
+            "days" => Token::Days,
+            "required" => Token::Required,
+            "true" => Token::True,
+            "false" => Token::False,
+            _ => return None,
         })
     }
 
@@ -144,21 +202,47 @@ impl Lexer {
             self.skip_ws();
             let line = self.line;
             match self.peek() {
-                None       => { out.push(Token::Eof); break; }
-                Some('{')  => { self.advance(); out.push(Token::LBrace); }
-                Some('}')  => { self.advance(); out.push(Token::RBrace); }
-                Some(':')  => { self.advance(); out.push(Token::Colon);  }
-                Some('+')  => { self.advance(); out.push(Token::Plus);   }
-                Some('-')  => { self.advance(); out.push(Token::Minus);  }
+                None => {
+                    out.push(Token::Eof);
+                    break;
+                }
+                Some('{') => {
+                    self.advance();
+                    out.push(Token::LBrace);
+                }
+                Some('}') => {
+                    self.advance();
+                    out.push(Token::RBrace);
+                }
+                Some(':') => {
+                    self.advance();
+                    out.push(Token::Colon);
+                }
+                Some('+') => {
+                    self.advance();
+                    out.push(Token::Plus);
+                }
+                Some('-') => {
+                    self.advance();
+                    out.push(Token::Minus);
+                }
                 Some('>') => {
                     self.advance();
-                    if self.peek() == Some('=') { self.advance(); out.push(Token::Gte); }
-                    else { out.push(Token::Gt); }
+                    if self.peek() == Some('=') {
+                        self.advance();
+                        out.push(Token::Gte);
+                    } else {
+                        out.push(Token::Gt);
+                    }
                 }
                 Some('<') => {
                     self.advance();
-                    if self.peek() == Some('=') { self.advance(); out.push(Token::Lte); }
-                    else { out.push(Token::Lt); }
+                    if self.peek() == Some('=') {
+                        self.advance();
+                        out.push(Token::Lte);
+                    } else {
+                        out.push(Token::Lt);
+                    }
                 }
                 Some('"') => {
                     let s = self.read_string()?;
@@ -166,8 +250,12 @@ impl Lexer {
                 }
                 Some(c) if c.is_ascii_digit() => {
                     let n = self.read_number();
-                    if self.peek() == Some('%') { self.advance(); out.push(Token::Percentage(n)); }
-                    else                        { out.push(Token::Number(n)); }
+                    if self.peek() == Some('%') {
+                        self.advance();
+                        out.push(Token::Percentage(n));
+                    } else {
+                        out.push(Token::Number(n));
+                    }
                 }
                 Some(c) if c.is_alphabetic() || c == '_' => {
                     let ident = self.read_ident();
@@ -178,7 +266,10 @@ impl Lexer {
                         self.skip_ws();
                         if self.peek().map_or(false, |c| c.is_ascii_digit()) {
                             let amount = self.read_number();
-                            out.push(Token::Money { currency: ident, amount });
+                            out.push(Token::Money {
+                                currency: ident,
+                                amount,
+                            });
                             continue;
                         }
                         (self.pos, self.line) = saved;

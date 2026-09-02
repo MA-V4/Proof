@@ -1,0 +1,13 @@
+[package]
+name    = "proof-bootstrap"
+version = "0.1.0"
+edition = "2021"
+description = "Bootstrapping tool: extract .proof specs from existing financial code"
+
+[dependencies]
+proof-dsl  = { path = "../proof-dsl" }
+anyhow     = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+reqwest    = { workspace = true }
+regex      = "1"
