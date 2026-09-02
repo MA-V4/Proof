@@ -72,7 +72,7 @@ const NEW_DEFAULT = `product SavingsAccount {
 function diffLabel(item: DiffItem): { label: string; old?: string; new?: string; impact?: string } {
   switch (item.type) {
     case 'base_rate_changed':
-      return { label: 'Base rate changed', old: `${item.old}%`, new: `${item.new}%`, impact: `Delta: ${item.delta}%` }
+        return { label: 'Base rate changed', old: `${item.old}%`, new: `${item.new}%`, impact: `Delta: ${item.delta}%` }
     case 'tier_threshold_changed':
       return {
         label: `Tier ${item.tier_index + 1} threshold`,
@@ -227,20 +227,7 @@ export default function DiffPage() {
                   )
                 })}
               </div>
-              <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-                <p className="text-xs text-slate-500">
-                  Run a simulation to see the customer impact of these changes before deploying.
-                </p>
-                
-                  href="/simulate"
-                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                <a>
-                  Go to simulator
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M2 6h8M6 2l4 4-4 4"/>
-                  </svg>
-                </a>
-              </div>
+                <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between"><p className="text-xs text-slate-500">Run a simulation to see the customer impact of these changes before deploying.</p><a href="/simulate" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">Go to simulator<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 6h8M6 2l4 4-4 4"/></svg></a></div>
             </>
           )}
         </div>
