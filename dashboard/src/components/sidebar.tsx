@@ -115,7 +115,7 @@ export function Sidebar() {
 
       <div className="px-4 py-3 border-t border-slate-100 flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-          MA
+          A
         </div>
         <div className="min-w-0">
           <div className="text-sm font-semibold text-slate-900 truncate">ADMIN</div>
