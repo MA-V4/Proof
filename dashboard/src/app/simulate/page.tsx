@@ -267,31 +267,30 @@ export default function SimulatePage() {
             )}
           </div>
 
-          {/* Verdict */}
-          {verdict && (
-            <div
-              className="rounded-2xl px-6 py-4 flex items-center justify-between border shadow-sm"
-              style={{ background: verdict.bg, borderColor: verdict.border }}
-            >
-              <div>
-                <div className="text-sm font-bold" style={{ color: verdict.color }}>{verdict.label}</div>
-                {report.avg_delta_worse && (
-                  <div className="text-xs mt-0.5" style={{ color: verdict.color, opacity: 0.8 }}>
-                    Average customer impact: £{report.avg_delta_worse}/day
-                  </div>
-                )}
-              </div>
-              
-                href="/audit"
-                className="text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
-                style={{ background: verdict.color, color: 'white' }}
-              <a>
-                Sign off in audit trail
-              </a>
-            </div>
-          )}
+{/* Verdict */}
+{verdict && (
+  <div 
+    className="rounded-2xl px-6 py-4 flex items-center justify-between border shadow-sm" 
+    style={{ backgroundColor: verdict.bg, borderColor: verdict.border }}
+  >
+    <div>
+      <div className="text-sm font-bold" style={{ color: verdict.color }}>
+        {verdict.label}
+      </div>
+      {report.avg_delta_worse && (
+        <div className="text-xs mt-0.5" style={{ color: verdict.color, opacity: 0.8 }}>
+          Average customer impact: £{report.avg_delta_worse}/day
         </div>
       )}
     </div>
-  )
-}
+
+    {/* FIXED: Properly structured anchor tag */}
+    <a 
+      href="/audit" 
+      className="text-xs font-semibold px-4 py-2 rounded-lg transition-colors" 
+      style={{ backgroundColor: verdict.color, color: 'white' }}
+    >
+      Sign off in audit trail
+    </a>
+  </div>
+)}
