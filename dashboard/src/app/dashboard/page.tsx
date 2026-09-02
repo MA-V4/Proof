@@ -209,7 +209,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-red-700">
-              {activeDivs.length} divergence{activeDivs.length !== 1 ? 's' : ''} detected
+              {activeDivs.map(d => d.spec_name).filter((v, i, a) => a.indexOf(v) === i).join(', ')} · Click to investigate
             </p>
             <p className="text-xs text-red-500 mt-0.5">
               {[...new Set(activeDivs.map(d => d.spec_name))].join(', ')} · Click to investigate
