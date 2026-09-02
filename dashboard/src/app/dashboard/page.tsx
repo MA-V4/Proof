@@ -65,7 +65,7 @@ function MetricCard({ label, value, sub, delta, deltaUp, color, sparkData, icon 
   )
 }
 
-function DonutChart({ high, medium, low }: { high: number, medium: number, low: number }) {
+function DonutChart({ high, medium, low }: { high: number; medium: number; low: number }) {
   const total = high + medium + low
   const data  = total === 0
     ? [{ name: 'Clean', value: 1, color: '#10B981' }]
@@ -125,15 +125,16 @@ export default function DashboardPage() {
   const { data: divs, mutate: mutateDivs } = useSWR('allDivs', api.allDivergences, { refreshInterval: 3000 })
   const { data: auditEntries }             = useSWR('audit',   api.audit,           { refreshInterval: 10000 })
   const { data: specs }                    = useSWR('specs',   api.specs,           { refreshInterval: 10000 })
-  const [selected, setSelected]            = useState<Divergence | null>(null)
+  const [selected,    setSelected]    = useState<Divergence | null>(null)
+  const [drawerOpen,  setDrawerOpen]  = useState(false)
 
   const activeDivs   = divs   ?? []
   const recentEvents = events ?? []
 
-  const total    = health?.events_verified ?? 0
-  const divCount = health?.divergences ?? 0
+  const total     = health?.events_verified ?? 0
+  const divCount  = health?.divergences ?? 0
   const specCount = health?.specs ?? 0
-  const okRate   = total > 0
+  const okRate    = total > 0
     ? (((total - divCount) / total) * 100).toFixed(2) + '%'
     : '100.00%'
 
@@ -150,14 +151,21 @@ export default function DashboardPage() {
     .filter(e => e.kind === 'spec_loaded' || e.kind === 'spec_signed_off')
     .slice(0, 4)
 
+  function openDivergence(d: Divergence) {
+    setSelected(d)
+    setDrawerOpen(true)
+  }
+
   async function handleResolve(d: Divergence) {
     await api.resolve(d.spec_name, d.id)
     mutateDivs()
-    if (selected?.id === d.id) setSelected(null)
+    setSelected(null)
+    setDrawerOpen(false)
   }
 
   return (
     <div className="p-8 min-h-full">
+
       {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div>
@@ -181,7 +189,10 @@ export default function DashboardPage() {
             </div>
           )}
           <div className="relative">
-            <button className="p-2 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors bg-white">
+            <button
+              onClick={() => activeDivs.length > 0 && openDivergence(activeDivs[0])}
+              className="p-2 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors bg-white"
+            >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#64748B" strokeWidth="1.5">
                 <path d="M8 1a5 5 0 015 5c0 5.25 2 6.5 2 6.5H1S3 11.25 3 6a5 5 0 015-5z"/>
                 <path d="M6.5 13.5a1.5 1.5 0 003 0"/>
@@ -199,7 +210,7 @@ export default function DashboardPage() {
       {/* Alert banner */}
       {activeDivs.length > 0 && (
         <div
-          onClick={() => setSelected(activeDivs[0])}
+          onClick={() => openDivergence(activeDivs[0])}
           className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5 flex items-start gap-3 cursor-pointer hover:bg-red-100 transition-colors"
         >
           <div className="mt-0.5 text-red-500 flex-shrink-0">
@@ -209,7 +220,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-red-700">
-              {activeDivs.map(d => d.spec_name).filter((v, i, a) => a.indexOf(v) === i).join(', ')} · Click to investigate
+              {activeDivs.length} divergence{activeDivs.length !== 1 ? 's' : ''} detected
             </p>
             <p className="text-xs text-red-500 mt-0.5">
               {activeDivs.map(d => d.spec_name).filter((v, i, a) => a.indexOf(v) === i).join(', ')} · Click to investigate
@@ -244,8 +255,10 @@ export default function DashboardPage() {
 
       {/* Main grid */}
       <div className="grid grid-cols-5 gap-4">
+
         {/* Left col */}
         <div className="col-span-2 space-y-4">
+
           {/* Verification feed */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
@@ -259,7 +272,7 @@ export default function DashboardPage() {
                 recentEvents.slice(0, 6).map((e, i) => {
                   const div = activeDivs.find(d => d.customer_id === e.customer_id && d.spec_name === e.spec_name)
                   return (
-                    <div key={i} onClick={() => div && setSelected(div)}
+                    <div key={i} onClick={() => div && openDivergence(div)}
                       className={['flex items-center gap-3 px-5 py-3 transition-colors',
                         div ? 'cursor-pointer hover:bg-slate-50' : '',
                         selected?.id === div?.id ? 'bg-slate-50' : ''].join(' ')}>
@@ -331,53 +344,28 @@ export default function DashboardPage() {
 
         {/* Middle col */}
         <div className="col-span-2 space-y-4">
+
           {/* Divergence overview */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5">
             <h2 className="text-sm font-semibold text-slate-900 mb-4">Divergence overview</h2>
             <DonutChart high={highCount} medium={medCount} low={lowCount} />
-            {activeDivs.length > 0 && selected && (
-              <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-semibold text-slate-700">Selected: {selected.customer_id}</div>
-                <div className="text-xs font-mono font-semibold text-slate-900">£{selected.balance}</div>
-              </div>
-                {selected.diffs.map(d => (
-                  <div key={d.field} className="flex items-center justify-between text-xs py-0.5">
-                    <span className="font-mono text-slate-500">{d.field}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-600">{d.spec_value}</span>
-                      <span className="text-slate-300">→</span>
-                      <span className="text-red-600">{d.system_value}</span>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex gap-2 mt-2">
-                  <button onClick={() => handleResolve(selected)}
-                    className="text-xs text-slate-600 border border-slate-200 rounded-md px-2.5 py-1 hover:bg-slate-100 transition-colors">
-                    Resolve
-                  </button>
-                  <button onClick={() => setSelected(null)} className="text-xs text-slate-400 px-2.5 py-1">
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
-            {activeDivs.length > 0 && !selected && (
+            {activeDivs.length > 0 && (
               <div className="mt-4 space-y-2">
                 {activeDivs.map(d => (
-                  <div key={d.id} onClick={() => setSelected(d)}
-                    className="flex items-center gap-2 p-2 rounded-lg border border-red-100 bg-red-50 cursor-pointer hover:bg-red-100 transition-colors">
+                  <div key={d.id} onClick={() => openDivergence(d)}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border border-red-100 bg-red-50 cursor-pointer hover:bg-red-100 transition-colors">
                     <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-                    <span className="text-xs font-semibold text-red-700">{d.spec_name}</span>
+                    <span className="text-xs font-semibold text-red-700 flex-1">{d.spec_name}</span>
                     <span className="text-xs text-slate-500">{d.customer_id}</span>
-                    <span className="text-xs font-mono text-slate-400 ml-auto">£{d.balance}</span>
+                    <span className="text-xs font-mono font-semibold text-slate-700">£{d.balance}</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#EF4444" strokeWidth="1.5"><path d="M4 2l4 4-4 4"/></svg>
                   </div>
                 ))}
               </div>
             )}
             <div className="mt-4">
               <button
-                onClick={() => activeDivs.length > 0 && setSelected(activeDivs[0])}
+                onClick={() => activeDivs.length > 0 && openDivergence(activeDivs[0])}
                 className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
               >
                 Investigate divergences
@@ -419,7 +407,7 @@ export default function DashboardPage() {
                       <span className={['text-xs font-semibold px-2 py-0.5 rounded-full border flex-shrink-0',
                         isSignedOff ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                         : isLoaded  ? 'bg-blue-50 text-blue-700 border-blue-100'
-                        : 'bg-amber-50 text-amber-700 border-amber-100'].join(' ')}>
+                                    : 'bg-amber-50 text-amber-700 border-amber-100'].join(' ')}>
                         {isSignedOff ? 'Signed off' : isLoaded ? 'Deployed' : 'Pending'}
                       </span>
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#CBD5E1" strokeWidth="1.5"><path d="M5 3l4 4-4 4"/></svg>
@@ -436,22 +424,20 @@ export default function DashboardPage() {
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 h-full flex flex-col">
             <h2 className="text-sm font-semibold text-slate-900 mb-4">System integrity</h2>
             <div className="flex-1 flex items-center justify-center py-4">
-              <div className="relative">
-                <svg width="140" height="140" viewBox="0 0 140 140">
-                  {[60, 48, 36].map((r, i) => (
-                    <circle key={i} cx="70" cy="70" r={r} fill="none"
-                      stroke={i === 0 ? '#EFF6FF' : i === 1 ? '#DBEAFE' : '#BFDBFE'} strokeWidth={1}/>
-                  ))}
-                  {[0, 60, 120, 180, 240, 300].map((deg, i) => {
-                    const rad = (deg * Math.PI) / 180
-                    return <circle key={i} cx={70 + 52 * Math.cos(rad)} cy={70 + 52 * Math.sin(rad)} r="5"
-                      fill={i % 2 === 0 ? '#3B82F6' : '#93C5FD'} fillOpacity="0.6"/>
-                  })}
-                  <path d="M70,48 L84,56 L84,70 L70,78 L56,70 L56,56 Z" fill="#EFF6FF" stroke="#3B82F6" strokeWidth="1.5"/>
-                  <circle cx="70" cy="62" r="10" fill="#10B981"/>
-                  <path d="M65 62l3 3 6-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                </svg>
-              </div>
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                {[60, 48, 36].map((r, i) => (
+                  <circle key={i} cx="70" cy="70" r={r} fill="none"
+                    stroke={i === 0 ? '#EFF6FF' : i === 1 ? '#DBEAFE' : '#BFDBFE'} strokeWidth={1}/>
+                ))}
+                {[0, 60, 120, 180, 240, 300].map((deg, i) => {
+                  const rad = (deg * Math.PI) / 180
+                  return <circle key={i} cx={70 + 52 * Math.cos(rad)} cy={70 + 52 * Math.sin(rad)}
+                    r="5" fill={i % 2 === 0 ? '#3B82F6' : '#93C5FD'} fillOpacity="0.6"/>
+                })}
+                <path d="M70,48 L84,56 L84,70 L70,78 L56,70 L56,56 Z" fill="#EFF6FF" stroke="#3B82F6" strokeWidth="1.5"/>
+                <circle cx="70" cy="62" r="10" fill="#10B981"/>
+                <path d="M65 62l3 3 6-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              </svg>
             </div>
             <div className="text-center mt-2">
               <div className="text-xs text-slate-500 mb-1">All critical systems</div>
@@ -484,6 +470,82 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Slide-in drawer */}
+      {drawerOpen && selected && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-slate-900 bg-opacity-20" onClick={() => setDrawerOpen(false)} />
+          <div className="relative w-96 bg-white shadow-2xl h-full overflow-y-auto flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-bold text-slate-900">Divergence detail</div>
+                <div className="text-xs text-slate-500 mt-0.5">{selected.spec_name}</div>
+              </div>
+              <button onClick={() => setDrawerOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M3 3l10 10M13 3L3 13"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-5 flex-1">
+              <div className="flex items-center justify-between mb-5">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-red-50 text-red-600 font-semibold border border-red-100">
+                  Divergence detected
+                </span>
+                <span className="text-sm font-mono font-bold text-slate-900">£{selected.balance}</span>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Context</div>
+                  {[
+                    ['Customer',  selected.customer_id],
+                    ['Spec',      selected.spec_name],
+                    ['Event',     selected.event_type],
+                    ['Detected',  new Date(selected.detected_at).toLocaleString()],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-1.5 border-b border-slate-50">
+                      <span className="text-xs text-slate-500">{k}</span>
+                      <span className="text-xs font-medium text-slate-900">{v}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Field mismatches</div>
+                  {selected.diffs.map(d => (
+                    <div key={d.field} className="py-2.5 border-b border-slate-50">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-mono text-slate-500">{d.field}</span>
+                        {d.delta && <span className="text-xs font-semibold text-red-600">{d.delta}</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded font-mono">{d.spec_value}</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#CBD5E1" strokeWidth="1.5"><path d="M2 6h8M6 2l4 4-4 4"/></svg>
+                        <span className="text-xs bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded font-mono">{d.system_value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
+              <button
+                onClick={() => handleResolve(selected)}
+                className="flex-1 text-sm font-semibold text-slate-700 border border-slate-200 rounded-xl py-2.5 hover:bg-slate-50 transition-colors"
+              >
+                Mark resolved
+              </button>
+              <a href="/audit" className="flex-1 text-sm font-semibold text-center text-white bg-slate-900 hover:bg-slate-800 rounded-xl py-2.5 transition-colors">
+                View audit trail
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
