@@ -1,4 +1,37 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+const BASE = '/api/proxy'
+const API_KEY = process.env.API_KEY  ?? ''
+
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return {
+    ...(API_KEY ? { 'X-API-Key': API_KEY } : {}),
+    ...extra,
+  }
+}
+
+const get = async (path: string) => {
+  const r    = await fetch(`${BASE}${path}`)
+  const text = await r.text()
+  if (!text) throw new Error(`Empty response (HTTP ${r.status})`)
+  const data = JSON.parse(text)
+  if (!r.ok)  throw new Error(data.error ?? `HTTP ${r.status}`)
+  return data
+}
+
+const post = async (path: string, body: unknown) => {
+  const r    = await fetch(`${BASE}${path}`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  })
+  const text = await r.text()
+  if (!text) throw new Error(`Empty response (HTTP ${r.status})`)
+  const data = JSON.parse(text)
+  if (!r.ok)  throw new Error(data.error ?? `HTTP ${r.status}`)
+  return data
+}
+
+const del = (path: string) =>
+  fetch(`${BASE}${path}`, { method: 'DELETE' }).then(() => {})
 
 export type SpecSummary = {
   name:        string
@@ -73,39 +106,14 @@ export type DiffItem =
   | { type: 'promotional_rate_changed'; old: string; new: string }
   | { type: 'obligation_changed';       field: string; old: string; new: string }
 
- const get = async (path: string) => {
-  const r    = await fetch(`${BASE}${path}`)
-  const text = await r.text()
-  if (!text) throw new Error(`Empty response (HTTP ${r.status})`)
-  const data = JSON.parse(text)
-  if (!r.ok)  throw new Error(data.error ?? `HTTP ${r.status}`)
-  return data
-}
-
-const post = async (path: string, body: unknown) => {
-  const r    = await fetch(`${BASE}${path}`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(body),
-  })
-  const text = await r.text()
-  if (!text) throw new Error(`Server returned empty response (HTTP ${r.status})`)
-  const data = JSON.parse(text)
-  if (!r.ok)  throw new Error(data.error ?? `HTTP ${r.status}`)
-  return data
-}
-
-const del = (path: string) =>
-  fetch(`${BASE}${path}`, { method: 'DELETE' }).then(() => {})
-
 export const api = {
-  health:         (): Promise<Health>         => get('/health'),
-  specs:          (): Promise<SpecSummary[]>  => get('/specs'),
-  recentEvents:   (): Promise<RecentEvent[]>  => get('/events/recent'),
-  audit:          (): Promise<AuditEntry[]>   => get('/audit'),
-  specAudit:      (name: string): Promise<AuditEntry[]>   => get(`/specs/${name}/audit`),
-  divergences:    (name: string): Promise<Divergence[]>   => get(`/specs/${name}/divergences`),
-  exportFca:      (name: string): Promise<unknown>        => get(`/specs/${name}/audit/export`),
+  health:       (): Promise<Health>        => get('/health'),
+  specs:        (): Promise<SpecSummary[]> => get('/specs'),
+  recentEvents: (): Promise<RecentEvent[]> => get('/events/recent'),
+  audit:        (): Promise<AuditEntry[]>  => get('/audit'),
+  specAudit:    (name: string): Promise<AuditEntry[]>  => get(`/specs/${name}/audit`),
+  divergences:  (name: string): Promise<Divergence[]>  => get(`/specs/${name}/divergences`),
+  exportFca:    (name: string): Promise<unknown>       => get(`/specs/${name}/audit/export`),
 
   allDivergences: async (): Promise<Divergence[]> => {
     const specs: SpecSummary[] = await get('/specs')
