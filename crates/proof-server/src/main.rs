@@ -59,10 +59,9 @@ async fn main() -> anyhow::Result<()> {
         .layer(CorsLayer::permissive())
         .with_state(state);
 
-    let port = std::env::var("PORT").unwrap_or_else(|_| "3001".into());
-    let addr = format!("0.0.0.0:{}", port);
+    let addr = "0.0.0.0:3001";
     tracing::info!("PROOF server listening on http://{}", addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
     Ok(())
 }
