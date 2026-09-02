@@ -7,10 +7,14 @@ import useSWR from 'swr'
 import { api } from '@/lib/api'
 
 const Logo = () => (
-  <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-    <path d="M15 2L26.26 8.5v13L15 28 3.74 21.5v-13L15 2z" fill="#3B82F6" fillOpacity="0.15" stroke="#3B82F6" strokeWidth="1.5"/>
-    <path d="M15 8l8 4.5v9L15 26l-8-4.5v-9L15 8z" fill="#3B82F6" fillOpacity="0.25"/>
-    <circle cx="15" cy="15" r="3" fill="#3B82F6"/>
+  <svg width="28" height="36" viewBox="0 0 44 48" fill="none">
+    <line x1="10" y1="4" x2="10" y2="44"
+          stroke="currentColor" strokeWidth="3.5" strokeLinecap="round"/>
+    <path d="M 10,4 C 38,4 38,22 10,22"
+          stroke="currentColor" strokeWidth="3.5" strokeLinecap="round"/>
+    <path d="M 10,30 L 17,37 L 34,17"
+          stroke="#3B82F6" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 )
 
