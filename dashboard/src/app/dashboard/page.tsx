@@ -212,7 +212,7 @@ export default function DashboardPage() {
               {activeDivs.map(d => d.spec_name).filter((v, i, a) => a.indexOf(v) === i).join(', ')} · Click to investigate
             </p>
             <p className="text-xs text-red-500 mt-0.5">
-              {[...new Set(activeDivs.map(d => d.spec_name))].join(', ')} · Click to investigate
+              {activeDivs.map(d => d.spec_name).filter((v, i, a) => a.indexOf(v) === i).join(', ')} · Click to investigate
             </p>
           </div>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" className="mt-0.5 flex-shrink-0">
