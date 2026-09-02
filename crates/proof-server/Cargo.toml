@@ -26,3 +26,4 @@ chrono             = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 sqlx               = { workspace = true }
+libsqlite3-sys = { version = "0.30", features = ["bundled"] }
