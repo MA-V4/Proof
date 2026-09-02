@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import { api } from '@/lib/api'
 
@@ -60,9 +61,19 @@ export function Sidebar() {
   const path = usePathname()
   const { data: health } = useSWR('health', api.health, { refreshInterval: 5000 })
 
-  const total    = health?.events_verified ?? 0
-  const divs     = health?.divergences ?? 0
-  const okRate   = total > 0
+  const [time, setTime] = useState('')
+
+  useEffect(() => {
+    const fmt = () =>
+      new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    setTime(fmt())
+    const id = setInterval(() => setTime(fmt()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const total  = health?.events_verified ?? 0
+  const divs   = health?.divergences ?? 0
+  const okRate = total > 0
     ? (((total - divs) / total) * 100).toFixed(2)
     : '100.00'
 
@@ -109,7 +120,7 @@ export function Sidebar() {
         </svg>
         <div className="text-xs text-slate-400">All systems verified</div>
         <div className="text-xs text-slate-600 mt-0.5">
-          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · Live
+          {time} · Live
         </div>
       </div>
 
