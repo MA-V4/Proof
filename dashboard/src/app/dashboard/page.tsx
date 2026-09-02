@@ -375,13 +375,7 @@ export default function DashboardPage() {
                 <div className="text-xs text-slate-400">On portfolio</div>
               </div>
               
-                href="/simulate"
-                className="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-xl flex items-center justify-center text-white flex-shrink-0 transition-colors shadow-sm"
-              <a>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M4 3l9 5-9 5V3z"/>
-                </svg>
-              </a>
+              <a href="/simulate" className="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-xl flex items-center justify-center text-white flex-shrink-0 transition-colors shadow-sm"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5V3z"/></svg></a>
             </div>
             <div className="mt-4">
               <a href="/simulate" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
