@@ -1,9 +1,72 @@
 'use client'
 
-import useSWR from 'swr'
-import { useState } from 'react'
+import useSWR, { mutate as globalMutate } from 'swr'
+import { useState, useEffect, useRef } from 'react'
 import { api, Divergence, AuditEntry } from '@/lib/api'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+
+// DEMO EVENT POOLS
+
+const SA_CLEAN = [
+  { customer_id: 'C-2391', balance: '12000', amount: '1.81', tier: 'tier_1', rate: '5.50' },
+  { customer_id: 'C-3812', balance: '1500',  amount: '0.21', tier: 'tier_2', rate: '5.00' },
+  { customer_id: 'C-4420', balance: '500',   amount: '0.06', tier: 'base',   rate: '4.50' },
+  { customer_id: 'C-5534', balance: '25000', amount: '3.77', tier: 'tier_1', rate: '5.50' },
+  { customer_id: 'C-6201', balance: '2000',  amount: '0.27', tier: 'tier_2', rate: '5.00' },
+  { customer_id: 'C-7893', balance: '50000', amount: '7.53', tier: 'tier_1', rate: '5.50' },
+  { customer_id: 'C-8104', balance: '800',   amount: '0.10', tier: 'base',   rate: '4.50' },
+  { customer_id: 'C-9201', balance: '3500',  amount: '0.48', tier: 'tier_2', rate: '5.00' },
+  { customer_id: 'C-9202', balance: '18000', amount: '2.71', tier: 'tier_1', rate: '5.50' },
+]
+
+const SA_DIVERGENT = [
+  { customer_id: 'C-1047', balance: '9840',  amount: '1.21', tier: 'base',   rate: '4.50' },
+  { customer_id: 'C-8821', balance: '15000', amount: '1.81', tier: 'tier_1', rate: '5.00' },
+]
+
+const FL_CLEAN = [
+  { customer_id: 'FL-0291', balance: '22000', amount: '4.30', tier: 'tier_1', rate: '8.74' },
+  { customer_id: 'FL-1847', balance: '8500',  amount: '2.12', tier: 'base',   rate: '8.90' },
+  { customer_id: 'FL-2034', balance: '15000', amount: '3.58', tier: 'tier_1', rate: '8.74' },
+  { customer_id: 'FL-3912', balance: '5000',  amount: '1.22', tier: 'base',   rate: '8.90' },
+]
+
+async function sendBatch(specName: string, events: typeof SA_CLEAN) {
+  const body = {
+    events: events.map(e => ({
+      customer_id:   e.customer_id,
+      event_type:    { type: 'daily_accrual' },
+      balance:       e.balance,
+      system_output: { amount: e.amount, applied_tier: e.tier, rate_applied: e.rate },
+    })),
+  }
+  await fetch(`/api/proxy/verify/${specName}/batch`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
+  })
+}
+
+async function sendDemoTick(tick: number) {
+  const start  = (tick * 3) % SA_CLEAN.length
+  const clean  = [
+    SA_CLEAN[start % SA_CLEAN.length],
+    SA_CLEAN[(start + 1) % SA_CLEAN.length],
+    SA_CLEAN[(start + 2) % SA_CLEAN.length],
+  ]
+  await sendBatch('SavingsAccount', clean)
+
+  if (tick % 4 === 0) {
+    await sendBatch('SavingsAccount', [SA_DIVERGENT[tick % SA_DIVERGENT.length]])
+  }
+
+  if (tick % 3 === 0) {
+    const fi = (Math.floor(tick / 3)) % FL_CLEAN.length
+    await sendBatch('FlexLoan', [FL_CLEAN[fi], FL_CLEAN[(fi + 1) % FL_CLEAN.length]])
+  }
+}
+
+// UTILS
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -13,32 +76,27 @@ function getGreeting() {
 }
 
 function Sparkline({ points, color }: { points: number[]; color: string }) {
-  const max   = Math.max(...points)
-  const min   = Math.min(...points)
-  const range = max - min || 1
+  const max = Math.max(...points), min = Math.min(...points), range = max - min || 1
   const w = 120, h = 36
-  const pts = points
-    .map((v, i) => `${(i / (points.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`)
-    .join(' ')
-  const areaPath = `M${pts.split(' ').join('L')} L${w},${h} L0,${h} Z`
+  const pts = points.map((v, i) => `${(i / (points.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`).join(' ')
+  const area = `M${pts.split(' ').join('L')} L${w},${h} L0,${h} Z`
   return (
     <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
       <defs>
-        <linearGradient id={`grad-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`g${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.15"/>
           <stop offset="100%" stopColor={color} stopOpacity="0"/>
         </linearGradient>
       </defs>
-      <path d={areaPath} fill={`url(#grad-${color.replace('#', '')})`}/>
+      <path d={area} fill={`url(#g${color.replace('#','')})`}/>
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
 }
 
 function MetricCard({ label, value, sub, delta, deltaUp, color, sparkData, icon }: {
-  label: string; value: string; sub: string
-  delta?: string; deltaUp?: boolean; color: string
-  sparkData: number[]; icon: React.ReactNode
+  label: string; value: string; sub: string; delta?: string; deltaUp?: boolean
+  color: string; sparkData: number[]; icon: React.ReactNode
 }) {
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between overflow-hidden">
@@ -58,21 +116,19 @@ function MetricCard({ label, value, sub, delta, deltaUp, color, sparkData, icon 
           <span>{delta}</span>
         </div>
       )}
-      <div className="-mx-5 -mb-5">
-        <Sparkline points={sparkData} color={color} />
-      </div>
+      <div className="-mx-5 -mb-5"><Sparkline points={sparkData} color={color}/></div>
     </div>
   )
 }
 
 function DonutChart({ high, medium, low }: { high: number; medium: number; low: number }) {
   const total = high + medium + low
-  const data  = total === 0
+  const data = total === 0
     ? [{ name: 'Clean', value: 1, color: '#10B981' }]
     : [
-        { name: 'High severity',   value: high,   color: '#EF4444' },
-        { name: 'Medium severity', value: medium, color: '#FB923C' },
-        { name: 'Low severity',    value: low,    color: '#93C5FD' },
+        { name: 'High',   value: high,   color: '#EF4444' },
+        { name: 'Medium', value: medium, color: '#FB923C' },
+        { name: 'Low',    value: low,    color: '#93C5FD' },
       ].filter(d => d.value > 0)
   return (
     <div className="flex items-center gap-6">
@@ -81,7 +137,7 @@ function DonutChart({ high, medium, low }: { high: number; medium: number; low: 
           <PieChart>
             <Pie data={data} cx="50%" cy="50%" innerRadius={32} outerRadius={52}
               startAngle={90} endAngle={-270} dataKey="value" strokeWidth={0}>
-              {data.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              {data.map((e, i) => <Cell key={i} fill={e.color}/>)}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
@@ -95,11 +151,11 @@ function DonutChart({ high, medium, low }: { high: number; medium: number; low: 
           { label: 'High severity',   value: high,   color: '#EF4444' },
           { label: 'Medium severity', value: medium, color: '#FB923C' },
           { label: 'Low severity',    value: low,    color: '#93C5FD' },
-        ].map(row => (
-          <div key={row.label} className="flex items-center gap-2 text-sm">
-            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: row.color }}/>
-            <span className="text-slate-600">{row.label}</span>
-            <span className="font-semibold text-slate-900 ml-auto tabular">{row.value}</span>
+        ].map(r => (
+          <div key={r.label} className="flex items-center gap-2 text-sm">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.color }}/>
+            <span className="text-slate-600">{r.label}</span>
+            <span className="font-semibold text-slate-900 ml-auto tabular">{r.value}</span>
           </div>
         ))}
       </div>
@@ -120,36 +176,43 @@ const SPARK_SPECS  = [8, 9, 9, 9, 10, 10, 10, 11, 11, 12, 12, 12]
 const SPARK_IMPACT = [400, 600, 800, 550, 900, 750, 1000, 850, 1100, 950, 1150, 1284]
 
 export default function DashboardPage() {
-  const { data: health }                   = useSWR('health',  api.health,          { refreshInterval: 5000 })
-  const { data: events }                   = useSWR('recent',  api.recentEvents,    { refreshInterval: 3000 })
-  const { data: divs, mutate: mutateDivs } = useSWR('allDivs', api.allDivergences, { refreshInterval: 3000 })
-  const { data: auditEntries }             = useSWR('audit',   api.audit,           { refreshInterval: 10000 })
-  const { data: specs }                    = useSWR('specs',   api.specs,           { refreshInterval: 10000 })
-  const [selected,    setSelected]    = useState<Divergence | null>(null)
-  const [drawerOpen,  setDrawerOpen]  = useState(false)
+  const { data: health,  mutate: mutateHealth }  = useSWR('health',  api.health,          { refreshInterval: 5000 })
+  const { data: events,  mutate: mutateEvents }  = useSWR('recent',  api.recentEvents,    { refreshInterval: 3000 })
+  const { data: divs,    mutate: mutateDivs }    = useSWR('allDivs', api.allDivergences, { refreshInterval: 3000 })
+  const { data: auditEntries }                   = useSWR('audit',   api.audit,           { refreshInterval: 10000 })
+  const { data: specs }                          = useSWR('specs',   api.specs,           { refreshInterval: 10000 })
 
-  const activeDivs   = divs   ?? []
-  const recentEvents = events ?? []
+  const [selected,   setSelected]   = useState<Divergence | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [demoActive, setDemoActive] = useState(false)
+  const [tickCount,  setTickCount]  = useState(0)
+  const [resetting,  setResetting]  = useState(false)
+  const tickRef = useRef(0)
 
-  const total     = health?.events_verified ?? 0
-  const divCount  = health?.divergences ?? 0
-  const specCount = health?.specs ?? 0
-  const okRate    = total > 0
-    ? (((total - divCount) / total) * 100).toFixed(2) + '%'
-    : '100.00%'
+  useEffect(() => {
+    if (!demoActive) return
+    const id = setInterval(async () => {
+      tickRef.current += 1
+      setTickCount(tickRef.current)
+      await sendDemoTick(tickRef.current)
+    }, 7000)
+    return () => clearInterval(id)
+  }, [demoActive])
 
-  const monthlyImpact = activeDivs.reduce((sum, d) => {
-    const delta = parseFloat(d.diffs.find(f => f.field === 'amount')?.delta ?? '0')
-    return sum + Math.abs(delta) * 30
-  }, 0)
-
-  const highCount = activeDivs.filter(d => classifyDivergence(d) === 'high').length
-  const medCount  = activeDivs.filter(d => classifyDivergence(d) === 'medium').length
-  const lowCount  = activeDivs.filter(d => classifyDivergence(d) === 'low').length
-
-  const specChanges = (auditEntries ?? [])
-    .filter(e => e.kind === 'spec_loaded' || e.kind === 'spec_signed_off')
-    .slice(0, 4)
+  async function handleReset() {
+    setResetting(true)
+    try {
+      await fetch('/api/proxy/admin/reset', { method: 'POST' })
+      tickRef.current = 0
+      setTickCount(0)
+      setSelected(null)
+      setDrawerOpen(false)
+      await Promise.all([mutateHealth(), mutateDivs(), mutateEvents()])
+      await globalMutate('audit')
+    } finally {
+      setResetting(false)
+    }
+  }
 
   function openDivergence(d: Divergence) {
     setSelected(d)
@@ -162,6 +225,18 @@ export default function DashboardPage() {
     setSelected(null)
     setDrawerOpen(false)
   }
+
+  const activeDivs   = divs   ?? []
+  const recentEvents = events ?? []
+  const total        = health?.events_verified ?? 0
+  const divCount     = health?.divergences ?? 0
+  const specCount    = health?.specs ?? 0
+  const okRate       = total > 0 ? (((total - divCount) / total) * 100).toFixed(2) + '%' : '100.00%'
+  const monthlyImpact = activeDivs.reduce((s, d) => s + Math.abs(parseFloat(d.diffs.find(f => f.field === 'amount')?.delta ?? '0')) * 30, 0)
+  const highCount    = activeDivs.filter(d => classifyDivergence(d) === 'high').length
+  const medCount     = activeDivs.filter(d => classifyDivergence(d) === 'medium').length
+  const lowCount     = activeDivs.filter(d => classifyDivergence(d) === 'low').length
+  const specChanges  = (auditEntries ?? []).filter(e => e.kind === 'spec_loaded' || e.kind === 'spec_signed_off').slice(0, 4)
 
   return (
     <div className="p-8 min-h-full">
@@ -176,15 +251,15 @@ export default function DashboardPage() {
               : 'Everything is verified and operating within expected parameters.'}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {divCount === 0 ? (
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500"/>
               <span className="text-xs font-semibold text-emerald-700">All systems nominal</span>
             </div>
           ) : (
             <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-full px-3 py-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"/>
               <span className="text-xs font-semibold text-red-700">{divCount} divergence{divCount !== 1 ? 's' : ''} active</span>
             </div>
           )}
@@ -204,6 +279,40 @@ export default function DashboardPage() {
               </span>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Demo control bar */}
+      <div className="flex items-center justify-between bg-slate-900 rounded-xl px-4 py-2.5 mb-4">
+        <div className="flex items-center gap-2.5">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${demoActive ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}/>
+          <span className="text-xs font-semibold text-white">
+            {demoActive ? 'Demo mode active' : 'Demo mode paused'}
+          </span>
+          <span className="text-xs text-slate-400">
+            {demoActive
+              ? `${tickCount} tick${tickCount !== 1 ? 's' : ''} · events streaming every 7 seconds`
+              : 'Start to see a live stream of verification events'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReset}
+            disabled={resetting}
+            className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-40"
+          >
+            {resetting ? 'Resetting...' : 'Reset data'}
+          </button>
+          <button
+            onClick={() => setDemoActive(a => !a)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+              demoActive
+                ? 'bg-slate-700 text-white hover:bg-slate-600'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {demoActive ? 'Pause' : 'Start demo'}
+          </button>
         </div>
       </div>
 
@@ -267,7 +376,9 @@ export default function DashboardPage() {
             </div>
             <div className="divide-y divide-slate-50">
               {recentEvents.length === 0 ? (
-                <p className="text-sm text-slate-400 px-5 py-6 text-center">No events yet. Run a verify command.</p>
+                <p className="text-sm text-slate-400 px-5 py-6 text-center">
+                  {demoActive ? 'First events arriving shortly...' : 'Press Start demo to see live events.'}
+                </p>
               ) : (
                 recentEvents.slice(0, 6).map((e, i) => {
                   const div = activeDivs.find(d => d.customer_id === e.customer_id && d.spec_name === e.spec_name)
@@ -354,13 +465,19 @@ export default function DashboardPage() {
                 {activeDivs.map(d => (
                   <div key={d.id} onClick={() => openDivergence(d)}
                     className="flex items-center gap-3 p-2.5 rounded-lg border border-red-100 bg-red-50 cursor-pointer hover:bg-red-100 transition-colors">
-                    <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+                    <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"/>
                     <span className="text-xs font-semibold text-red-700 flex-1">{d.spec_name}</span>
                     <span className="text-xs text-slate-500">{d.customer_id}</span>
                     <span className="text-xs font-mono font-semibold text-slate-700">£{d.balance}</span>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#EF4444" strokeWidth="1.5"><path d="M4 2l4 4-4 4"/></svg>
                   </div>
                 ))}
+              </div>
+            )}
+            {activeDivs.length === 0 && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-emerald-600">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"/>
+                All calculations verified clean
               </div>
             )}
             <div className="mt-4">
@@ -419,7 +536,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right col: system integrity */}
+        {/* Right col */}
         <div className="col-span-1">
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 h-full flex flex-col">
             <h2 className="text-sm font-semibold text-slate-900 mb-4">System integrity</h2>
@@ -445,7 +562,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-4 space-y-2">
               {[
-                { label: 'Evaluation engine',  ok: true },
+                { label: 'Evaluation engine',   ok: true },
                 { label: 'Verification engine', ok: true },
                 { label: 'Database',            ok: true },
                 { label: 'API server',          ok: health?.status === 'ok' },
@@ -471,10 +588,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Slide-in drawer */}
+      {/* Drawer */}
       {drawerOpen && selected && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-slate-900 bg-opacity-20" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute inset-0 bg-slate-900 bg-opacity-20" onClick={() => setDrawerOpen(false)}/>
           <div className="relative w-96 bg-white shadow-2xl h-full overflow-y-auto flex flex-col">
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -487,15 +604,11 @@ export default function DashboardPage() {
                 </svg>
               </button>
             </div>
-
             <div className="px-6 py-5 flex-1">
               <div className="flex items-center justify-between mb-5">
-                <span className="text-xs px-2.5 py-1 rounded-full bg-red-50 text-red-600 font-semibold border border-red-100">
-                  Divergence detected
-                </span>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-red-50 text-red-600 font-semibold border border-red-100">Divergence detected</span>
                 <span className="text-sm font-mono font-bold text-slate-900">£{selected.balance}</span>
               </div>
-
               <div className="space-y-5">
                 <div>
                   <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Context</div>
@@ -511,7 +624,6 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
-
                 <div>
                   <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Field mismatches</div>
                   {selected.diffs.map(d => (
@@ -530,12 +642,9 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-
             <div className="px-6 py-4 border-t border-slate-100 flex gap-3">
-              <button
-                onClick={() => handleResolve(selected)}
-                className="flex-1 text-sm font-semibold text-slate-700 border border-slate-200 rounded-xl py-2.5 hover:bg-slate-50 transition-colors"
-              >
+              <button onClick={() => handleResolve(selected)}
+                className="flex-1 text-sm font-semibold text-slate-700 border border-slate-200 rounded-xl py-2.5 hover:bg-slate-50 transition-colors">
                 Mark resolved
               </button>
               <a href="/audit" className="flex-1 text-sm font-semibold text-center text-white bg-slate-900 hover:bg-slate-800 rounded-xl py-2.5 transition-colors">
